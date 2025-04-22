@@ -1,13 +1,19 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
-import toast from 'react-hot-toast';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+import type { User } from "@supabase/supabase-js";
+import toast from "react-hot-toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null; data: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null; data: any }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ error: Error | null; data: any }>;
+  signUp: (
+    email: string,
+    password: string
+  ) => Promise<{ error: Error | null; data: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -46,11 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
-      toast.success('Signed in successfully');
+      toast.success("Signed in successfully");
       return { data, error: null };
     } catch (error) {
-      toast.error(error.message || 'Failed to sign in');
-      return { data: null, error };
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to sign in";
+      toast.error(errorMessage);
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
     }
   };
 
@@ -65,11 +76,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
-      toast.success('Account created successfully');
+      toast.success("Account created successfully");
       return { data, error: null };
     } catch (error) {
-      toast.error(error.message || 'Failed to sign up');
-      return { data: null, error };
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to sign up";
+      toast.error(errorMessage);
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
     }
   };
 
@@ -77,9 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      toast.success('Signed out successfully');
+      toast.success("Signed out successfully");
     } catch (error) {
-      toast.error('Error signing out');
+      toast.error("Error signing out");
     }
   };
 
@@ -97,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

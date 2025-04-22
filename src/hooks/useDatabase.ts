@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import db from '../lib/db';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import db from "../lib/db";
+import toast from "react-hot-toast";
 
-export type DatabaseType = 'postgresql' | 'mysql' | 'mariadb';
+export type DatabaseType = "postgresql" | "mysql" | "mariadb";
 
 export interface DatabaseConnection {
   type: DatabaseType;
@@ -45,40 +45,41 @@ export interface TableIndex {
 }
 
 const defaultConnection: DatabaseConnection = {
-  type: 'postgresql',
-  host: import.meta.env.VITE_PG_HOST || '161.97.96.229',
-  port: import.meta.env.VITE_PG_PORT || '5432',
-  database: import.meta.env.VITE_PG_DATABASE || 'user24',
-  username: import.meta.env.VITE_PG_USER || 'user24',
-  password: import.meta.env.VITE_PG_PASSWORD || '',
+  type: "postgresql",
+  host: import.meta.env.VITE_PG_HOST || "161.97.96.229",
+  port: import.meta.env.VITE_PG_PORT || "5432",
+  database: import.meta.env.VITE_PG_DATABASE || "user24",
+  username: import.meta.env.VITE_PG_USER || "user24",
+  password: import.meta.env.VITE_PG_PASSWORD || "",
   ssl: false,
-  schema: 'public',
-  timezone: 'UTC'
+  schema: "public",
+  timezone: "UTC",
 };
 
 export const DATABASE_TYPES = [
-  { 
-    id: 'postgresql', 
-    name: 'PostgreSQL',
-    defaultPort: '5432',
-    icon: '🐘'
+  {
+    id: "postgresql",
+    name: "PostgreSQL",
+    defaultPort: "5432",
+    icon: "🐘",
   },
-  { 
-    id: 'mysql', 
-    name: 'MySQL',
-    defaultPort: '3306',
-    icon: '🐬'
+  {
+    id: "mysql",
+    name: "MySQL",
+    defaultPort: "3306",
+    icon: "🐬",
   },
-  { 
-    id: 'mariadb', 
-    name: 'MariaDB',
-    defaultPort: '3306',
-    icon: '🐋'
-  }
+  {
+    id: "mariadb",
+    name: "MariaDB",
+    defaultPort: "3306",
+    icon: "🐋",
+  },
 ];
 
 export const useDatabase = () => {
-  const [connection, setConnection] = useState<DatabaseConnection>(defaultConnection);
+  const [connection, setConnection] =
+    useState<DatabaseConnection>(defaultConnection);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -89,18 +90,21 @@ export const useDatabase = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const updateConnection = (field: keyof DatabaseConnection, value: string | boolean) => {
-    setConnection(prev => {
+  const updateConnection = (
+    field: keyof DatabaseConnection,
+    value: string | boolean
+  ) => {
+    setConnection((prev) => {
       const updated = { ...prev, [field]: value };
-      
+
       // Update port when database type changes
-      if (field === 'type') {
-        const dbType = DATABASE_TYPES.find(t => t.id === value);
+      if (field === "type") {
+        const dbType = DATABASE_TYPES.find((t) => t.id === value);
         if (dbType) {
           updated.port = dbType.defaultPort;
         }
       }
-      
+
       return updated;
     });
     setConnectionError(null);
@@ -113,19 +117,19 @@ export const useDatabase = () => {
 
   const validateConnection = (): boolean => {
     if (!connection.host.trim()) {
-      setConnectionError('Host is required');
+      setConnectionError("Host is required");
       return false;
     }
     if (!connection.port.trim()) {
-      setConnectionError('Port is required');
+      setConnectionError("Port is required");
       return false;
     }
     if (!connection.database.trim()) {
-      setConnectionError('Database name is required');
+      setConnectionError("Database name is required");
       return false;
     }
     if (!connection.username.trim()) {
-      setConnectionError('Username is required');
+      setConnectionError("Username is required");
       return false;
     }
     return true;
@@ -141,12 +145,14 @@ export const useDatabase = () => {
 
     try {
       await db.testConnection(connection);
-      toast.success('Database connection successful');
+      toast.success("Database connection successful");
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Database connection failed';
+      const errorMessage =
+        error instanceof Error ? error.message : "Database connection failed";
       setConnectionError(errorMessage);
       toast.error(errorMessage);
+      // console.log("Connection error:", errorMessage);
       return false;
     } finally {
       setIsConnecting(false);
@@ -160,10 +166,13 @@ export const useDatabase = () => {
 
     try {
       // Here you would typically save the connection details to your configuration
-      toast.success('Connection settings saved successfully');
+      toast.success("Connection settings saved successfully");
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save connection settings';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to save connection settings";
       toast.error(errorMessage);
       return false;
     }
@@ -173,21 +182,26 @@ export const useDatabase = () => {
     setIsBackingUp(true);
     try {
       const backupData = await db.createBackup();
-      
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+        type: "application/json",
+      });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `backup_${new Date().toISOString().split("T")[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
-      toast.success('Database backup created successfully');
+
+      toast.success("Database backup created successfully");
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create database backup';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create database backup";
       toast.error(errorMessage);
       return false;
     } finally {
@@ -202,7 +216,10 @@ export const useDatabase = () => {
       setDbStats(stats);
       return stats;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load database statistics';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to load database statistics";
       toast.error(errorMessage);
       return null;
     } finally {
@@ -215,12 +232,13 @@ export const useDatabase = () => {
       setSelectedTable(tableName);
       const [columns, indexes] = await Promise.all([
         db.getTableColumns(tableName),
-        db.getTableIndexes(tableName)
+        db.getTableIndexes(tableName),
       ]);
       setTableColumns(columns);
       setTableIndexes(indexes);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load table details';
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load table details";
       toast.error(errorMessage);
     }
   };
@@ -244,6 +262,6 @@ export const useDatabase = () => {
     loadDatabaseStats,
     loadTableDetails,
     setShowPassword,
-    DATABASE_TYPES
+    DATABASE_TYPES,
   };
 };

@@ -1,12 +1,12 @@
-import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { create } from "zustand";
+import { supabase } from "../lib/supabase";
 
 export interface ScrapingJob {
   id: string;
   source: string;
   query: string;
   location: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
   results: number;
   date: string;
   user_id: string;
@@ -31,15 +31,15 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const { data, error } = await supabase
-        .from('scraping_jobs')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("scraping_jobs")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       set({ jobs: data || [], isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: (error as Error).message, isLoading: false });
     }
   },
 
@@ -47,18 +47,18 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const { data, error } = await supabase
-        .from('scraping_jobs')
+        .from("scraping_jobs")
         .insert([job])
         .select()
         .single();
 
       if (error) throw error;
-      set(state => ({ 
+      set((state) => ({
         jobs: [data, ...state.jobs],
-        isLoading: false 
+        isLoading: false,
       }));
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: (error as Error).message, isLoading: false });
     }
   },
 
@@ -66,19 +66,21 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const { data, error } = await supabase
-        .from('scraping_jobs')
+        .from("scraping_jobs")
         .update(updates)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-      set(state => ({
-        jobs: state.jobs.map(job => job.id === id ? { ...job, ...data } : job),
-        isLoading: false
+      set((state) => ({
+        jobs: state.jobs.map((job) =>
+          job.id === id ? { ...job, ...data } : job
+        ),
+        isLoading: false,
       }));
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: (error as Error).message, isLoading: false });
     }
   },
 
@@ -86,17 +88,17 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const { error } = await supabase
-        .from('scraping_jobs')
+        .from("scraping_jobs")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
-      set(state => ({
-        jobs: state.jobs.filter(job => job.id !== id),
-        isLoading: false
+      set((state) => ({
+        jobs: state.jobs.filter((job) => job.id !== id),
+        isLoading: false,
       }));
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: (error as Error).message, isLoading: false });
     }
-  }
+  },
 }));
