@@ -7,13 +7,13 @@
     "crawler",
     "scraping"
   ],
-  "homepage": "https://github.com/Le-Sourcier/Propect_Pro#readme",
+  "homepage": "https://github.com/Le-Sourcier/Prospect_Pro#readme",
   "bugs": {
-    "url": "https://github.com/Le-Sourcier/Propect_Pro/issues"
+    "url": "https://github.com/Le-Sourcier/Prospect_Pro/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Le-Sourcier/Propect_Pro.git"
+    "url": "git+https://github.com/Le-Sourcier/Prospect_Pro.git"
   },
   "license": "MIT",
   "author": "Le-Sourcier",
