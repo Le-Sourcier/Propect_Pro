@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const jwt = require("jsonwebtoken");
 
 const SECRET = process.env.JWT_SECRET;
-if (!process.env.JWT_SECRET) {
+if (!SECRET) {
   throw new Error("JWT_SECRET env var is required");
 }
 
@@ -34,12 +34,12 @@ module.exports = (sequelize) => {
         unique: true,
       },
       status: {
-        type: DataTypes.ENUM("Unverified", "Verified", "Archived", "Blocked"),
+        type: DataTypes.ENUM("UNVERIFIED", "VERIFIED", "ARCHIVED", "BLOCKED"),
         allowNull: false,
-        defaultValue: "Unverified",
+        defaultValue: "UNVERIFIED",
       },
       role: {
-        type: DataTypes.ENUM("USER", "ADMIN", "MODERATOR", "SUPER_ADMIN"),
+        type: DataTypes.ENUM("USER", "ADMIN", "SUPER_ADMIN"),
         defaultValue: "USER",
         allowNull: false,
       },
@@ -87,6 +87,20 @@ module.exports = (sequelize) => {
       as: "profile",
       onDelete: "CASCADE",
     });
+  };
+
+  Users.prototype.generateTokens = function () {
+    const payload = { id: this.id, email: this.email };
+
+    const accessToken = jwt.sign(payload, SECRET, {
+      expiresIn: "15m",
+    });
+
+    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return { accessToken, refreshToken };
   };
 
   return Users;

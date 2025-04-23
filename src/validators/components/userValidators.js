@@ -133,16 +133,6 @@ const userAuthValidator = async (req, res, next) => {
           "Password must include at least one uppercase letter, one lowercase letter, one number, one special character, and be at least 8 characters long.",
         "any.required": "Password is required.",
       }),
-      fname: Joi.string().required().messages({
-        "any.required": "First name is required.",
-      }),
-      lname: Joi.string().required().messages({
-        "any.required": "Last name is required.",
-      }),
-      phone: Joi.number().positive().required().messages({
-        "number.base": "Phone number must be a valid positive number.",
-        "any.required": "Phone number is required.",
-      }),
     })
       .unknown(false) // Disallow extra fields
       .validateAsync(req.body);

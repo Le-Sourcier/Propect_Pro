@@ -1,15 +1,15 @@
 const router = require("express").Router();
-const { userRegisterValidator } = require("./../../validators");
+const {
+  userRegisterValidator,
+  userAuthValidator,
+} = require("./../../validators");
 const userController = require("../../controllers/components/userController");
 
-// Créer un utilisateur
 router
-  .post("/register", userRegisterValidator, userController.register)
-
-  // Récupérer tous les utilisateurs
-  .get("/", userController.getAllUsers)
-
-  // Récupérer un utilisateur + son profil + ses sessions
-  .get("/:id", userController.getUserWithDetails);
+  .post("/register", userRegisterValidator, userController.register) // Créer un utilisateur
+  .post("/login", userAuthValidator, userController.login) // Authentifier un utilisateur
+  .delete("/delete-admin/:id", userController.delete) //Delete Admin
+  .get("/", userController.getAllUsers) // Get all users
+  .get("/:id", userController.getUserWithDetails); // Get user by id
 
 module.exports = router;
