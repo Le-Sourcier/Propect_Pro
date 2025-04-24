@@ -1,38 +1,43 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Database } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Database } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import toast from "react-hot-toast";
+import { FormField } from "../components/ui";
 
 const Register = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [fname, setFname] = useState("");
+  const [lname, setLname] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
-      
+      const { error } = await signUp(email, password, fname, lname, phone);
+
       if (error) {
-        toast.error(error.message || 'Failed to sign up');
+        toast.error(error.message || "Failed to sign up");
       } else {
-        toast.success('Account created! You can now sign in.');
-        navigate('/login');
+        toast.success("Account created! You can now sign in.");
+        navigate("/login");
       }
     } catch (error) {
-      toast.error('An unexpected error occurred');
+      toast.error("An unexpected error occurred");
       console.error(error);
     } finally {
       setLoading(false);
@@ -51,8 +56,11 @@ const Register = () => {
           Create a new account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+          Or{" "}
+          <Link
+            to="/login"
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
             sign in to your existing account
           </Link>
         </p>
@@ -61,59 +69,41 @@ const Register = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
+            <FormField
+              htmlFor="email"
+              label="Email"
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
+            <FormField
+              htmlFor="password"
+              label="Password"
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-            <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirm-password"
-                  name="confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
+            <FormField
+              htmlFor="confirm-password"
+              label="Confirm Password"
+              id="confirm-password"
+              name="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
 
             <div className="flex items-center">
               <input
@@ -123,13 +113,23 @@ const Register = () => {
                 required
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                I agree to the{' '}
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+
+              <label
+                htmlFor="terms"
+                className="ml-2 block text-sm text-gray-900"
+              >
+                I agree to the{" "}
+                <a
+                  href="#"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Terms of Service
-                </a>{' '}
-                and{' '}
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                </a>{" "}
+                and{" "}
+                <a
+                  href="#"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Privacy Policy
                 </a>
                 , including the processing of my data for marketing purposes.
@@ -142,7 +142,7 @@ const Register = () => {
                 disabled={loading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? "Creating account..." : "Create account"}
               </button>
             </div>
           </form>

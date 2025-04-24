@@ -12,7 +12,10 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null; data: any }>;
   signUp: (
     email: string,
-    password: string
+    password: string,
+    fname: string,
+    lname: string,
+    phone: string
   ) => Promise<{ error: Error | null; data: any }>;
   signOut: () => Promise<void>;
 }
