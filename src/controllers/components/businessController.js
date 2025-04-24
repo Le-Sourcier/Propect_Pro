@@ -1,6 +1,5 @@
 const { Users, Profiles, Sessions } = require("../../models");
-const { serverMessage } = require("../../utils");
-const db = require("./../../models");
+const db = require("../../models");
 
 const bcrypt = require("bcrypt");
 
@@ -14,12 +13,12 @@ module.exports = {
 
       const existingUser = await Users.findOne({ where: { email } });
       if (existingUser) {
-        return serverMessage(res, "ACCOUNT_ALREADY_EXISTS");
+        return res.status(400).json({ error: "Email already exists" });
       }
       // Check if the phone number already exists
       const existingPhone = await Profiles.findOne({ where: { phone } });
       if (existingPhone) {
-        return serverMessage(res, "PHONE_ALREADY_EXISTS");
+        return res.status(400).json({ error: "Phone number already exists" });
       }
 
       const user = await Users.create({ email, password });
@@ -41,26 +40,30 @@ module.exports = {
 
       await transaction.commit();
 
-      const data = {
-        id: userPlain.id,
-        email: userPlain.email,
-        firstName: profilePlain.fname,
-        lastName: profilePlain.lname,
-        dateOfBirth: profilePlain.dob,
-        address: profilePlain.address,
-        phone: profilePlain.phone,
-        role: userPlain.role,
-        bio: profilePlain.bio,
-        image: profilePlain.image,
-        status: userPlain.status,
-        createdAt: userPlain.createdAt,
-        updatedAt: userPlain.updatedAt,
-      };
-      return serverMessage(res, "ACCOUNT_CREATED", data);
+      return res.status(201).json({
+        error: false,
+        status: 201,
+        message: "User created",
+        data: {
+          id: userPlain.id,
+          email: userPlain.email,
+          firstName: profilePlain.fname,
+          lastName: profilePlain.lname,
+          dateOfBirth: profilePlain.dob,
+          address: profilePlain.address,
+          phone: profilePlain.phone,
+          role: userPlain.role,
+          bio: profilePlain.bio,
+          image: profilePlain.image,
+          status: userPlain.status,
+          createdAt: userPlain.createdAt,
+          updatedAt: userPlain.updatedAt,
+        },
+      });
     } catch (error) {
       await transaction.rollback();
       console.error(error);
-      return serverMessage(res);
+      res.status(500).json({ error: "Something went wrong" });
     }
   },
 
@@ -71,25 +74,25 @@ module.exports = {
 
       const user = await Users.findOne({ where: { email } });
       if (!user) {
-        return serverMessage(res, "PROFILE_NOT_FOUND");
+        return res.status(400).json({ error: "User not found" });
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return serverMessage(res, "INVALID_CREDENTIALS");
+        return res.status(401).json({ error: "Invalid password" });
       }
 
       //   Check if the user account is verified
       if (user.status === "UNVERIFIED") {
-        return serverMessage(res, "ACCOUNT_UNVERIFIED");
+        return res.status(401).json({ error: "User account is not verified" });
       }
       // Check if the user account is blocked
       if (user.status === "BLOCKED") {
-        return serverMessage(res, "ACCOUNT_BLOKED");
+        return res.status(401).json({ error: "User account is blocked" });
       }
       //   Check if the user account is archived
       if (user.status === "ARCHIVED") {
-        return serverMessage(res, "ACCOUNT_ARCHIVED");
+        return res.status(401).json({ error: "User account is archived" });
       }
 
       // Generate access and refresh tokens (assuming method exists in your model)
@@ -117,27 +120,30 @@ module.exports = {
       delete profilePlain.createdAt;
       delete profilePlain.updatedAt;
 
-      const data = {
-        id: userPlain.id,
-        email: userPlain.email,
-        firstName: profilePlain.fname,
-        lastName: profilePlain.lname,
-        dateOfBirth: profilePlain.dob,
-        address: profilePlain.address,
-        phone: profilePlain.phone,
-        role: userPlain.role,
-        bio: profilePlain.bio,
-        image: profilePlain.image,
-        status: userPlain.status,
-        accessToken,
-        refreshToken,
-        updatedAt: userPlain.updatedAt,
-      };
-
-      return serverMessage(res, "LOGIN_SUCCESS", data);
+      return res.status(200).json({
+        error: false,
+        status: 202,
+        message: "Login successful",
+        data: {
+          id: userPlain.id,
+          email: userPlain.email,
+          firstName: profilePlain.fname,
+          lastName: profilePlain.lname,
+          dateOfBirth: profilePlain.dob,
+          address: profilePlain.address,
+          phone: profilePlain.phone,
+          role: userPlain.role,
+          bio: profilePlain.bio,
+          image: profilePlain.image,
+          status: userPlain.status,
+          accessToken,
+          refreshToken,
+          updatedAt: userPlain.updatedAt,
+        },
+      });
     } catch (error) {
       console.error(error);
-      return serverMessage(res);
+      res.status(500).json({ error: "Something went wrong during login" });
     }
   },
   // Update user data (excluding email)
@@ -150,7 +156,7 @@ module.exports = {
 
       const user = await Users.findByPk(userId);
       if (!user) {
-        return serverMessage(res, "PROFILE_NOT_FOUND");
+        return res.status(404).json({ error: "User not found" });
       }
 
       user.fname = fname || user.fname;
@@ -160,13 +166,11 @@ module.exports = {
       await user.save();
       await transaction.commit();
 
-      // res.status(200).json({ message: "User updated successfully", user });
-      return serverMessage(res, "PROFILE_UPDATED", user);
+      res.status(200).json({ message: "User updated successfully", user });
     } catch (error) {
       await transaction.rollback();
-      // console.error(error);
-      // res.status(500).json({ error: "Something went wrong during update" });
-      return serverMessage(res);
+      console.error(error);
+      res.status(500).json({ error: "Something went wrong during update" });
     }
   },
   //   Reset password
@@ -178,13 +182,13 @@ module.exports = {
 
       const user = await Users.findByPk(userId);
       if (!user) {
-        return serverMessage(res, "PROFILE_NOT_FOUND");
+        return res.status(404).json({ error: "User not found" });
       }
 
       // OPTIONAL: Verify old password first
       const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
       if (!isPasswordValid) {
-        return serverMessage(res, "OLD_PASSWORD_INVALID");
+        return res.status(401).json({ error: "Old password is incorrect" });
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -193,11 +197,13 @@ module.exports = {
       await user.save();
       await transaction.commit();
 
-      return serverMessage(res, "PASSWORD_RESET_SUCCESS");
+      res.status(200).json({ message: "Password reset successful" });
     } catch (error) {
       await transaction.rollback();
       console.error(error);
-      return serverMessage(res);
+      res
+        .status(500)
+        .json({ error: "Something went wrong during password reset" });
     }
   },
 

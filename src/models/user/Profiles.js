@@ -26,6 +26,11 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    dob: {
+      // Date of Birth
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
     address: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -36,10 +41,6 @@ module.exports = (sequelize) => {
     },
     bio: {
       type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    dob: {
-      type: DataTypes.DATEONLY,
       allowNull: true,
     },
   });

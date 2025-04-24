@@ -103,7 +103,7 @@ const userRegisterValidator = async (req, res, next) => {
         "any.required": "Phone number is required.",
       }),
     })
-      .unknown(false) // Disallow extra fields
+      .unknown(true) // Disallow extra fields
       .validateAsync(req.body);
 
     return next(); // Proceed if validation passes
@@ -134,7 +134,7 @@ const userAuthValidator = async (req, res, next) => {
         "any.required": "Password is required.",
       }),
     })
-      .unknown(false) // Disallow extra fields
+      .unknown(true) // Disallow extra fields
       .validateAsync(req.body);
 
     return next(); // Proceed if validation passes
