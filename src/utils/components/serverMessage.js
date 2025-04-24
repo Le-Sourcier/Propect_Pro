@@ -48,6 +48,12 @@ module.exports = serverMessage = (res, key, data = []) => {
       status = 423; // Locked - La ressource est verrouillée et ne peut être modifiée
       break;
 
+    // Erreur lies a trop de tentatives de connexion
+    case "TOO_MANY_ATTEMPTS":
+      error = true;
+      status = 429; // Too Many Requests - Trop de requêtes envoyées dans un court laps de temps
+      break;
+
     // Erreurs serveur (5xx)
     case "SERVER_ERROR":
       error = true;
@@ -101,5 +107,6 @@ module.exports = serverMessage = (res, key, data = []) => {
       message = "UNKNOWN_ERROR"; // Code non défini
   }
 
-  return res.status(status).json({ error, status, message, data });
+  if (res) return res.status(status).json({ error, status, message, data });
+  else return { error, status, message, data };
 };

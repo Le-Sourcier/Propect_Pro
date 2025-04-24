@@ -1,8 +1,14 @@
 const jwt = require("jsonwebtoken");
 const db = require("../models");
+
+const rateLimit = require("express-rate-limit");
 const { serverMessage } = require("../utils");
 
+const unprotectedRoutes = ["/api/login", "/api/register"];
 const authorize = async (req, res, next) => {
+  if (unprotectedRoutes.includes(req.originalUrl)) {
+    return next(); // Pas besoin de JWT ici
+  }
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -34,4 +40,13 @@ const authorize = async (req, res, next) => {
   }
 };
 
-module.exports = { authorize };
+// Middleware pour limiter les tentatives de login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limite chaque IP à 5 requêtes par windowMs
+  message: serverMessage(null, "TOO_MANY_ATTEMPTS"),
+  standardHeaders: true, // renvoie les headers rate limit standard
+  legacyHeaders: false, // désactive les X-RateLimit-* headers
+});
+
+module.exports = { authorize, loginLimiter };
