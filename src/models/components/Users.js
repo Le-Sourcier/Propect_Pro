@@ -93,7 +93,7 @@ module.exports = (sequelize) => {
     const payload = { id: this.id, email: this.email };
 
     const accessToken = jwt.sign(payload, SECRET, {
-      expiresIn: "15m",
+      expiresIn: "2h",
     });
 
     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {

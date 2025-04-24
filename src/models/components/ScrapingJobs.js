@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 
 module.exports = (sequelize) => {
   const ScrapingJobs = sequelize.define(
-    "ScrapingJobs",
+    "scraping_jobs",
     {
       id: {
         type: DataTypes.UUID,
@@ -18,6 +18,10 @@ module.exports = (sequelize) => {
           key: "id",
         },
       },
+      source: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       query: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -29,27 +33,19 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      max_results: {
+      results: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 10,
-        validate: {
-          min: 1,
-          max: 1000,
-        },
       },
-      use_proxy: {
-        type: DataTypes.BOOLEAN,
+      status: {
+        type: DataTypes.ENUM("pending", "running", "completed", "failed"),
         allowNull: false,
-        defaultValue: false,
-      },
-      proxy_urls: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        allowNull: true,
+        defaultValue: "pending",
       },
     },
     {
-      tableName: "ScrapingJobs",
+      tableName: "scraping_jobs",
       timestamps: true, // createdAt et updatedAt
     }
   );

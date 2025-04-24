@@ -160,7 +160,7 @@ module.exports = async function googleScraper(name, location) {
   // Filter out results without titles and write them to a file
   const filteredResults = results.filter((result) => result.title);
 
-  // console.log("Completed"); // Log completion message
+  // console.log("Completed: ", filteredResults); // Log completion message
 
   await browser.close(); // Close the browser
   return filteredResults; // Return the filtered results

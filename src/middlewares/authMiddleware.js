@@ -4,7 +4,7 @@ const db = require("../models");
 const rateLimit = require("express-rate-limit");
 const { serverMessage } = require("../utils");
 
-const unprotectedRoutes = ["/api/login", "/api/register"];
+const unprotectedRoutes = ["/api/user/login", "/api/user/register"];
 const authorize = async (req, res, next) => {
   if (unprotectedRoutes.includes(req.originalUrl)) {
     return next(); // Pas besoin de JWT ici
@@ -20,7 +20,10 @@ const authorize = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await db.Users.findByPk(decoded.id);
+    const user = await db.Users.findByPk(decoded.id, {
+      include: [{ model: db.Profiles, as: "profile" }],
+    });
+    // const user = await db.Users.findByPk(decoded.id);
     if (!user) {
       return serverMessage(res, "ACCOUNT_NOT_FOUND");
     }

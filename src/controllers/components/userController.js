@@ -140,6 +140,26 @@ module.exports = {
       return serverMessage(res);
     }
   },
+  // Get current user data
+  getMe: async (req, res) => {
+    try {
+      const user = req.user;
+      const profile = user.profile;
+
+      const data = {
+        id: user.id,
+        email: user.email,
+        fname: profile.fname,
+        lname: profile.lname,
+        phone: profile.phone,
+      };
+
+      res.json(data);
+    } catch (error) {
+      // console.error(error);
+      serverMessage(res);
+    }
+  },
   // Update user data (excluding email)
   updateUser: async (req, res) => {
     const transaction = await db.sequelize.transaction();

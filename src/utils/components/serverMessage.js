@@ -56,6 +56,7 @@ module.exports = serverMessage = (res, key, data = []) => {
 
     // Erreurs serveur (5xx)
     case "SERVER_ERROR":
+    case "FAILED_TO_GET_JOB":
       error = true;
       status = 500; // Internal Server Error
       break;
@@ -65,6 +66,7 @@ module.exports = serverMessage = (res, key, data = []) => {
     case "USER_CREATED":
     case "PROFILE_CREATED":
     case "SESSION_CREATED":
+    case "JOB_CREATED":
       status = 201; // Created - La ressource a été créée avec succès
       break;
 
@@ -87,11 +89,14 @@ module.exports = serverMessage = (res, key, data = []) => {
     case "PASSWORD_CHANGED":
     case "OTP_SENT":
     case "OTP_VERIFIED":
+    case "JOB_FETCHED":
+    case "JOB_UPDATED":
       status = 200; // OK (successful operation)
       break;
 
     // Erreurs liées à la gestion des ressources et à l'action
     case "RESOURCE_NOT_FOUND":
+    case "NO_JOBS_FOUND":
     case "ACTION_NOT_ALLOWED":
     case "PROFILE_NOT_FOUND":
     case "ACCOUNT_NOT_FOUND":

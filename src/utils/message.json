@@ -67,9 +67,21 @@
         "en": "User account created successfully.",
         "fr": "Compte utilisateur créé avec succès."
     },
+    "JOB_CREATED": {
+        "en": "Task created successfully.",
+        "fr": "Tâche créée avec succès."
+    },
+    "JOB_FETCHED":{
+      "en":"Task fetched successfully.",
+      "fr":"Tâche récupérée avec succès."
+    },
     "USER_UPDATED": {
         "en": "User information updated successfully.",
         "fr": "Informations utilisateur mises à jour avec succès."
+    },
+    "JOB_UPDATED":{
+        "en":"Task updated successfully.",
+        "fr":"Tâche mise à jour avec succès."
     },
     "USER_DELETED": {
         "en": "User account deleted successfully.",
@@ -111,6 +123,14 @@
     "RESOURCE_NOT_FOUND": {
         "en": "Requested resource was not found.",
         "fr": "Ressource demandée introuvable."
+    },
+    "NO_JOBS_FOUND":{
+        "en":"No jobs found, please create a new one.",
+        "fr": "Aucune tâche trouvé, veuillez en créer un nouveau."
+    },
+    "FAILED_TO_GET_JOB":{
+        "en":"Failed to get job details.",
+        "fr": "Échec de la récupération des détails de la tâche."
     },
     "ACTION_NOT_ALLOWED": {
         "en": "This action is not permitted.",

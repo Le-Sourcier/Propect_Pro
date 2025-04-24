@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const { authorize } = require("../middlewares/authMiddleware");
 
-const userRouter = require("./components/userRouter");
-
-router.use("/", userRouter); // will be accessible at /api/*
+router.use("/user", authorize, require("./components/userRouter"));
+router.use("/job", require("./components/jobRouter"));
 
 module.exports = router;
