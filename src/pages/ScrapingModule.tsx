@@ -9,6 +9,7 @@ import {
   Settings as SettingsIcon,
   Search,
   Plus,
+  RotateCcw,
 } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import { useScrapingStore } from "../stores/scrapingStore";
@@ -19,12 +20,6 @@ const ScrapingModule = () => {
   const { user } = useAuth();
   const { jobs, isLoading, error, fetchJobs, createJob, updateJob, deleteJob } =
     useScrapingStore();
-  // const jobId = jobs.id;
-  // const { status, results: jobResutl } = useJobSSE(
-  //   "6bf91c7a-ee19-42f7-9113-3e875d8adf5c"
-  // );
-  // console.log("JOB STATUS: ", status);
-  // console.log("JOB Resutl Count: ", jobResutl);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "new";
@@ -61,7 +56,7 @@ const ScrapingModule = () => {
   }, [user]);
 
   // Update URL when tab changes
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: string, param = {}) => {
     setSearchParams({ tab });
   };
 
@@ -141,12 +136,12 @@ const ScrapingModule = () => {
     }
   };
 
-  const handlePauseJob = async (jobId: string) => {
+  const handleRestartStartJob = async (jobId: string) => {
     try {
-      await updateJob(jobId, { status: "pending" });
-      toast.success("Job paused successfully");
+      await updateJob(jobId, { status: "running" });
+      toast.success("Job has restarted successfully");
     } catch (error) {
-      toast.error("Failed to pause job");
+      toast.error("Failed to restart job");
     }
   };
 
@@ -295,28 +290,49 @@ const ScrapingModule = () => {
                   </p>
                 </div>
               </div>
-
               <div>
                 <label
                   htmlFor="results"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Maximum Results: {results}
+                  Maximum Results:{" "}
+                  <span
+                    style={{
+                      color: results === 0 ? "#075bf7" : "black",
+                    }}
+                  >
+                    {results === 0 ? "auto" : results}
+                  </span>
                 </label>
                 <input
                   type="range"
                   id="results"
-                  min="10"
+                  min="0"
                   max="500"
                   step="10"
                   value={results}
                   onChange={(e) => setResults(Number(e.target.value))}
-                  className="mt-1 block w-full"
+                  className={`mt-1 block w-full transition-colors duration-200 ${
+                    results === 0 ? "text-gray-400 accent-gray-200" : "#075bf7"
+                  }`}
                 />
                 <div className="mt-1 flex justify-between text-xs text-gray-500">
-                  <span>10</span>
-                  <span>250</span>
-                  <span>500</span>
+                  {[
+                    { label: "auto", value: 0 },
+                    { label: "170", value: 10 },
+                    { label: "330", value: 250 },
+                    { label: "500", value: 500 },
+                  ].map(({ label, value }) => (
+                    <span
+                      key={value}
+                      onClick={() => setResults(value)}
+                      className={`cursor-pointer ${
+                        results === value ? "text-blue-600 font-semibold" : ""
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -548,7 +564,11 @@ const ScrapingModule = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {jobs.map((job) => (
-                    <tr key={job.id}>
+                    <tr
+                      key={job.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleTabChange("results")}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {job.source}
                       </td>
@@ -583,8 +603,9 @@ const ScrapingModule = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {job.status === "running" ? (
                           <button
-                            onClick={() => handlePauseJob(job.id)}
-                            className="text-yellow-600 hover:text-yellow-900 mr-3"
+                            // onClick={() => handlePauseJob(job.id)}
+                            disabled
+                            className="text-gray-300 hover:text-gray-400 mr-3  cursor-progress"
                           >
                             <Pause className="h-4 w-4" />
                           </button>
@@ -594,6 +615,13 @@ const ScrapingModule = () => {
                             className="text-blue-600 hover:text-blue-900 mr-3"
                           >
                             <Play className="h-4 w-4" />
+                          </button>
+                        ) : job.status === "failed" ? (
+                          <button
+                            onClick={() => handleRestartStartJob(job.id)}
+                            className="text-gray-500 hover:text-red-500 mr-3 cursor-pointer "
+                          >
+                            <RotateCcw className="h-4 w-4" />
                           </button>
                         ) : null}
                         <button
