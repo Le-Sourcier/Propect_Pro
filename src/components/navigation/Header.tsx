@@ -1,6 +1,6 @@
-import React from 'react';
-import { Menu, Bell, User } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import React from "react";
+import { Menu, Bell, User } from "lucide-react";
+import useAuth from "../../hooks/useAuth";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -8,7 +8,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
   const { user } = useAuth();
-  
+
   return (
     <header className="bg-white shadow-sm z-10">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -22,7 +22,9 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
               <Menu size={24} />
             </button>
             <div className="hidden lg:block">
-              <h1 className="text-2xl font-semibold text-gray-800">ProspectPro</h1>
+              <h1 className="text-2xl font-semibold text-gray-800">
+                ProspectPro
+              </h1>
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -36,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                   <User size={16} />
                 </div>
                 <span className="hidden md:block ml-2 mr-2">
-                  {user?.email?.split('@')[0] || 'User'}
+                  {user?.email?.split("@")[0] || "User"}
                 </span>
               </button>
             </div>

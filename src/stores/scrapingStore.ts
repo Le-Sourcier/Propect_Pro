@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { supabase } from "../lib/supabase";
 
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_API_URL + "/job";
+
 export interface ScrapingJob {
   id: string;
   source: string;
@@ -8,7 +12,7 @@ export interface ScrapingJob {
   location: string;
   status: "pending" | "running" | "completed" | "failed";
   results: number;
-  date: string;
+  createdAt: string;
   user_id: string;
 }
 
@@ -30,13 +34,9 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
   fetchJobs: async (userId: string) => {
     try {
       set({ isLoading: true, error: null });
-      const { data, error } = await supabase
-        .from("scraping_jobs")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+      const res = await axios.get(`${BASE_URL}/get/` + userId);
+      const { data } = res.data;
 
-      if (error) throw error;
       set({ jobs: data || [], isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
@@ -46,15 +46,12 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
   createJob: async (job: Partial<ScrapingJob>) => {
     try {
       set({ isLoading: true, error: null });
-      const { data, error } = await supabase
-        .from("scraping_jobs")
-        .insert([job])
-        .select()
-        .single();
 
-      if (error) throw error;
+      const res = await axios.post(`${BASE_URL}/create`, { ...job });
+      const { data: jobData } = res.data;
+
       set((state) => ({
-        jobs: [data, ...state.jobs],
+        jobs: [jobData, ...state.jobs],
         isLoading: false,
       }));
     } catch (error) {
@@ -65,14 +62,9 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
   updateJob: async (id: string, updates: Partial<ScrapingJob>) => {
     try {
       set({ isLoading: true, error: null });
-      const { data, error } = await supabase
-        .from("scraping_jobs")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
+      const res = await axios.put(`${BASE_URL}/update/${id}`, updates);
+      const { data } = res.data;
 
-      if (error) throw error;
       set((state) => ({
         jobs: state.jobs.map((job) =>
           job.id === id ? { ...job, ...data } : job
