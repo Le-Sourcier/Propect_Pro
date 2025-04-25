@@ -8,8 +8,9 @@ const { loginLimiter } = require("../../middlewares/authMiddleware");
 
 router
   .post("/register", userRegisterValidator, userController.register) // Créer un utilisateur
-  .post("/login", loginLimiter, userAuthValidator, userController.login) // Authentifier un utilisateur
+  .post("/login", userAuthValidator, userController.login) // Authentifier un utilisateur
   .get("/me", userController.getMe) // Get current user
+  .get("/refresh", userController.refresh) // Refresh token
   .put("/update/:id", userController.updateUser) //Update user by id
   .put("/reset-password", userController.resetPassword) // Reset user password by id
   .delete("/delete/:id", userController.delete) //Delete user by id

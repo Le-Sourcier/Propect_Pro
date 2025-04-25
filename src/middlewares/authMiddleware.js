@@ -4,10 +4,19 @@ const db = require("../models");
 const rateLimit = require("express-rate-limit");
 const { serverMessage } = require("../utils");
 
-const unprotectedRoutes = ["/api/user/login", "/api/user/register"];
+const unprotectedRoutes = [
+  "/api/user/login",
+  "/api/user/register",
+  "/api/user/refresh",
+];
 const authorize = async (req, res, next) => {
-  if (unprotectedRoutes.includes(req.originalUrl)) {
-    return next(); // Pas besoin de JWT ici
+  // if (unprotectedRoutes.includes(req.originalUrl)) {
+  //   return next(); // Pas besoin de JWT ici
+  // }
+
+  const path = req.originalUrl.split("?")[0];
+  if (unprotectedRoutes.includes(path)) {
+    return next();
   }
   const authHeader = req.headers.authorization;
 

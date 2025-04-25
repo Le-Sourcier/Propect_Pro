@@ -95,13 +95,23 @@ module.exports = {
       // Generate access and refresh tokens (assuming method exists in your model)
       const { accessToken, refreshToken } = user.generateTokens();
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // expire in 7 days
+      // expiresAt.setDate(expiresAt.getDate() + 7); // expire in 7 days
+      expiresAt.setMinutes(expiresAt.getMinutes() + 1);
 
       // Save the refresh token in session
       await Sessions.create({
         user_id: user.id,
         token: refreshToken,
         expires_at: expiresAt,
+      });
+
+      // [2] Set refreshToken as secure cookie
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        // secure: true, // à activer uniquement en HTTPS
+        secure: process.env.NODE_ENV === "production", // active en prod HTTPS
+        sameSite: "Strict",
+        maxAge: 7 * 24 * 3600 * 1000, // 7 jours
       });
 
       //   Get user profile data
@@ -142,6 +152,7 @@ module.exports = {
   },
   // Get current user data
   getMe: async (req, res) => {
+    console.log("Hello from getMe");
     try {
       const user = req.user;
       const profile = user.profile;
@@ -160,6 +171,29 @@ module.exports = {
       serverMessage(res);
     }
   },
+  // controllers/auth.js
+  refresh: async (req, res) => {
+    try {
+      const token = req.cookies.refreshToken;
+      console.log("Hello from refresh", JSON.stringify(req));
+
+      if (!token) return res.status(401).json({ error: "No token" });
+      // Vérifier et extraire userId
+      const payload = jwt.verify(token, process.env.REFRESH_SECRET);
+      // Vérifier que le token existe en base et n’est pas expiré
+      const session = await Sessions.findOne({ where: { token } });
+      if (!session || session.expires_at < new Date()) {
+        return res.status(403).json({ error: "Token expiré ou invalide" });
+      }
+      // Générer un nouvel accessToken
+      const accessToken = generateAccessToken({ id: payload.id });
+      // (Optionnel) rotation : générer aussi un nouveau refresh, mettre à jour la session et le cookie
+      return res.json({ accessToken });
+    } catch (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+  },
+
   // Update user data (excluding email)
   updateUser: async (req, res) => {
     const transaction = await db.sequelize.transaction();
