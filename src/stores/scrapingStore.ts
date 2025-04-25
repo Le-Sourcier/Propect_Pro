@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { supabase } from "../lib/supabase";
 
 import axios from "axios";
 
@@ -79,12 +78,10 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
   deleteJob: async (id: string) => {
     try {
       set({ isLoading: true, error: null });
-      const { error } = await supabase
-        .from("scraping_jobs")
-        .delete()
-        .eq("id", id);
+      await axios.put(`${BASE_URL}/delete/${id}`);
+      // const { data } = res.data;
 
-      if (error) throw error;
+      // if (error) throw error;
       set((state) => ({
         jobs: state.jobs.filter((job) => job.id !== id),
         isLoading: false,

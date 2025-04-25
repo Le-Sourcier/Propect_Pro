@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+// import { supabase } from '../lib/supabase';
+import toast from "react-hot-toast";
 
 interface GarminCredentials {
   email: string;
@@ -15,12 +15,15 @@ export function useGarmin() {
   const connect = async (credentials: GarminCredentials) => {
     setIsConnecting(true);
     try {
-      const { data: { url: functionUrl } } = await supabase
-        .functions.invoke('garmin-connect', {
-          body: JSON.stringify(credentials)
-        });
+      // const {
+      //   data: { url: functionUrl },
+      // } = await supabase.functions.invoke("garmin-connect", {
+      //   body: JSON.stringify(credentials),
+      // });
 
-      const response = await fetch(functionUrl);
+      // const response = await fetch(functionUrl);
+      const response = await fetch("");
+
       const data = await response.json();
 
       if (data.error) {
@@ -28,10 +31,10 @@ export function useGarmin() {
       }
 
       setActivities(data.activities);
-      toast.success('Successfully connected to Garmin');
+      toast.success("Successfully connected to Garmin");
       return data;
     } catch (error) {
-      toast.error('Failed to connect to Garmin: ' + error.message);
+      toast.error("Failed to connect to Garmin: " + error.message);
       throw error;
     } finally {
       setIsConnecting(false);
@@ -41,8 +44,9 @@ export function useGarmin() {
   const fetchActivities = async () => {
     setIsLoading(true);
     try {
-      const { data: { url: functionUrl } } = await supabase
-        .functions.invoke('garmin-connect');
+      const {
+        data: { url: functionUrl },
+      } = await supabase.functions.invoke("garmin-connect");
 
       const response = await fetch(functionUrl);
       const data = await response.json();
@@ -54,7 +58,7 @@ export function useGarmin() {
       setActivities(data.activities);
       return data.activities;
     } catch (error) {
-      toast.error('Failed to fetch activities: ' + error.message);
+      toast.error("Failed to fetch activities: " + error.message);
       throw error;
     } finally {
       setIsLoading(false);
@@ -66,6 +70,6 @@ export function useGarmin() {
     fetchActivities,
     activities,
     isConnecting,
-    isLoading
+    isLoading,
   };
 }
