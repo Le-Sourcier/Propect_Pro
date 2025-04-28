@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { X, Check, Upload, ArrowLeft } from "lucide-react";
@@ -178,7 +178,7 @@ function MappingDialogHelper({
               {Object.keys(mappedColumns).map((field) => (
                 <div
                   key={field}
-                  className="w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.5rem)] transition-all duration-300 ease-in-out transform hover:scale-105"
+                  className="w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.5rem)]"
                 >
                   <label className="block text-sm font-medium text-gray-700">
                     {fieldMetadata[field]?.label || field}{" "}
@@ -196,7 +196,11 @@ function MappingDialogHelper({
                       </span>
                     )}
                   </label>
-
+                  {fieldMetadata[field]?.description && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {fieldMetadata[field].description}
+                    </p>
+                  )}
                   <select
                     value={mappedColumns[field]}
                     onChange={(e) => handleMappingChange(field, e.target.value)}
