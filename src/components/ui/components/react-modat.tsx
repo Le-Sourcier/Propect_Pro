@@ -2,11 +2,19 @@ import React from "react";
 
 interface ReactModalProps {
   children: React.ReactNode;
+  label?: string | React.ReactNode;
   isOpen: boolean;
+  className?: React.HTMLAttributes<HTMLDivElement> | string;
   onClose: () => void;
 }
 
-function _ReactModal({ children, isOpen, onClose }: ReactModalProps) {
+function _ReactModal({
+  children,
+  label,
+  isOpen,
+  className,
+  onClose,
+}: ReactModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -15,25 +23,25 @@ function _ReactModal({ children, isOpen, onClose }: ReactModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full"
+        className={`bg-white p-6 rounded-lg shadow-lg md:w-[80%] lg:w-[65%] max-[1024px]:mx-6 max-h-[95%] flex flex-col ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-semibold">React Modal</h1>
+          <h1
+            style={{ visibility: !!label ? "visible" : "hidden" }}
+            className="text-xl font-semibold"
+          >
+            {label}
+          </h1>
           <button
-            className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+            className="text-white hover:text-opacity-90 bg-blue-600 bg-opacity-80 hover:bg-opacity-100 p-1 h-6 w-6 flex items-center justify-center rounded-full text-2xl leading-none"
             onClick={onClose}
           >
             &times;
           </button>
         </div>
-        <div className="mb-4">
-          <p>This is a simple React component.</p>
-        </div>
-        <div>{children}</div>
-        <div className="mt-4">
-          <p>End of the component.</p>
-        </div>
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

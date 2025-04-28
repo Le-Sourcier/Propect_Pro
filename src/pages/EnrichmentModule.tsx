@@ -1,13 +1,8 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  Upload,
-  Database,
-  Download,
-  Filter,
-  RefreshCw,
-  FileText,
-} from "lucide-react";
+
+import { Upload, Database, Download, RefreshCw, FileText } from "lucide-react";
+import MappingModule from "../components/utils/MapingDialog";
 
 const EnrichmentModule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -157,11 +152,16 @@ const EnrichmentModule = () => {
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
-    setSelectedFile(undefined);
+    // setSelectedFile(undefined);
   };
+
   return (
     <>
-      {" "}
+      <MappingModule
+        file={selectedFile}
+        isOpen={isDialogOpen}
+        onClose={handleDialogClose}
+      />
       <div className="space-y-6">
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
