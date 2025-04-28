@@ -87,9 +87,21 @@
         "en": "User account deleted successfully.",
         "fr": "Compte utilisateur supprimé avec succès."
     },
+    "JOB_DELETED":{
+      "en":"Task deleted successfully.",
+      "fr":"Tâche supprimée avec succès."
+    },
     "USER_NOT_FOUND": {
         "en": "User not found.",
         "fr": "Utilisateur introuvable."
+    },
+    "JOB_NOT_FOUND":{
+      "en":"Task not found.",
+      "fr":"Tâche introuvable."
+    },
+    "NO_DATA_FOUND": {
+        "en": "No data found for the given criteria.",
+        "fr": "Aucune donnée trouvée pour les critères donnés."
     },
     "PHONE_ALREADY_EXISTS": {
         "en": "This phone number is already linked to another account.",
@@ -131,6 +143,11 @@
     "FAILED_TO_GET_JOB":{
         "en":"Failed to get job details.",
         "fr": "Échec de la récupération des détails de la tâche."
+    },
+    "ENRICHMENT_FAILED":{      
+       "en":"Failed to enrich file data.",
+       "fr":"Échec de l’enrichissement des données du fichier."
+
     },
     "ACTION_NOT_ALLOWED": {
         "en": "This action is not permitted.",

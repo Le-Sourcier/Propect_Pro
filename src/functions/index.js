@@ -1,4 +1,5 @@
 module.exports = {
-  GoogleScraper: require("./components/googleMapsScraper"),
+  Google: require("./components/googleMapsScraper"),
   YellowScraper: require("./components/yellowPageScraper"),
+  Pappers: require("./components/pappersScraper"),
 };

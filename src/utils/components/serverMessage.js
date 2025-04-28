@@ -19,6 +19,7 @@ module.exports = serverMessage = (res, key, data = []) => {
     case "FILE_UPLOAD_FAILED":
     case "FILE_DOWNLOAD_FAILED":
     case "PASSWORD_CHANGE_FAILED":
+    case "ENRICHMENT_FAILED":
       error = true;
       status = 400; // Bad Request
       break;
@@ -91,12 +92,15 @@ module.exports = serverMessage = (res, key, data = []) => {
     case "OTP_VERIFIED":
     case "JOB_FETCHED":
     case "JOB_UPDATED":
+    case "JOB_DELETED":
       status = 200; // OK (successful operation)
       break;
 
     // Erreurs liées à la gestion des ressources et à l'action
     case "RESOURCE_NOT_FOUND":
     case "NO_JOBS_FOUND":
+    case "NO_DATA_FOUND":
+    case "JOB_NOT_FOUND":
     case "ACTION_NOT_ALLOWED":
     case "PROFILE_NOT_FOUND":
     case "ACCOUNT_NOT_FOUND":

@@ -1,5 +1,6 @@
-const { GoogleScraper } = require("./../../functions");
+const { Google, Pappers } = require("./../../functions");
 const { scraping_jobs: Jobs, Users } = require("../../models");
+const db = require("./../../models");
 const { serverMessage } = require("../../utils");
 const jobEmitter = require("../../events/jobEvent");
 
@@ -106,22 +107,29 @@ module.exports = {
 
       // Déclencher le scraping en arrière-plan
       if (statusWillChangeToRunning) {
-        console.log("Job is starting, launching GoogleScraper...");
+        console.log("Job is starting, launching Google.Scraper...");
 
-        GoogleScraper(job.query, job.location)
-          .then(async (results) => {
-            console.log("Scraping completed for job:", job.id);
-            await job.update({
-              status: "completed",
-              results: results.length,
-            });
-          })
-          .catch(async (err) => {
-            console.error("Scraping failed for job:", job.id, err);
-            await job.update({
-              status: "failed",
-            });
+        let JobSource = job.source;
+        let JobType;
+
+        if (JobSource === "google-maps") {
+          JobType = Google.Scraper(job.query, job.location);
+        } else if (JobSource === "pappers") {
+          JobType = Pappers.scraper(job.query);
+        }
+
+        JobType.then(async (results) => {
+          console.log("Scraping completed for job:", job.id);
+          await job.update({
+            status: "completed",
+            results: results.length,
           });
+        }).catch(async (err) => {
+          console.error("Scraping failed for job:", job.id, err);
+          await job.update({
+            status: "failed",
+          });
+        });
       }
 
       return serverMessage(res, "JOB_UPDATED", job);
@@ -132,15 +140,24 @@ module.exports = {
 
   // Delete job
   deleteJob: async (req, res) => {
+    const transaction = await db.sequelize.transaction();
     try {
-      const job = await Jobs.findByPk(req.params.id);
+      const jobId = req.params.id;
+      if (!jobId) return serverMessage(res, "JOB_NOT_FOUND");
+
+      const job = await Jobs.findByPk(jobId);
       if (!job) {
         return serverMessage(res, "JOB_NOT_FOUND");
       }
 
       await job.destroy();
+      await transaction.commit();
+
       return serverMessage(res, "JOB_DELETED");
     } catch (error) {
+      await transaction.rollback();
+      console.error("UNABLE_TO_DELETE_JOB,", error);
+      // res.status(500).json({ error: "Unable to delete job" });
       return serverMessage(res);
     }
   },

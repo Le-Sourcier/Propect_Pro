@@ -1,5 +1,4 @@
 // Import the necessary libraries
-const fs = require("fs"); // File system, for writing files
 const proxyChain = require("proxy-chain"); // For anonymizing the proxy
 const puppeteer = require("puppeteer-extra"); // Enhanced version of Puppeteer for additional functionality
 
@@ -12,25 +11,27 @@ puppeteer.use(StealthPlugin());
 const proxy =
   "http://brd-customer-hl_020d4d81-zone-datacenter_proxy1-ip-158.46.166.29:b2f0p7qjizag@brd.superproxy.io:33335";
 // The main async function where the browser automation takes place
-module.exports = async function googleScraper(name, location) {
+async function Scraper(name, location) {
   // Anonymize the proxy to prevent detection
   const newProxyUrl = await proxyChain.anonymizeProxy(proxy);
   console.log(newProxyUrl); // Print the new anonymized proxy URL
 
   // Launch the browser with specified options
   const browser = await puppeteer.launch({
-    headless: false, // Run browser in headless mode (no UI)
+    headless: true, // Run browser in headless mode (no UI)
     // args: [`--proxy-server=${newProxyUrl}`], // Use the anonymized proxy
   });
 
   // Create a new page in the browser
   const page = await browser.newPage();
   // Navigate to Google Maps and search for the keyword
-  await page.goto(
-    `https://www.google.com/maps/search/${encodeURIComponent(
-      name
-    )}+${encodeURIComponent(location)}/`
-  );
+  let searchUrl = "https://www.google.com/maps/search/";
+  if (name && location)
+    searchUrl += `${encodeURIComponent(name)}+${encodeURIComponent(location)}/`;
+  else if (name) searchUrl += `${encodeURIComponent(name)}/`;
+  else if (location) searchUrl += `${encodeURIComponent(location)}/`;
+
+  await page.goto(searchUrl);
 
   // Try to find and click the accept cookies button, if it appears
   try {
@@ -160,15 +161,132 @@ module.exports = async function googleScraper(name, location) {
   // Filter out results without titles and write them to a file
   const filteredResults = results.filter((result) => result.title);
 
-  // console.log("Completed: ", filteredResults); // Log completion message
-
   await browser.close(); // Close the browser
   return filteredResults; // Return the filtered results
-};
+}
+
+// Google maps enricher
+async function Enricher(name, location) {
+  // Anonymize the proxy to prevent detection
+  const newProxyUrl = await proxyChain.anonymizeProxy(proxy);
+  console.log(newProxyUrl); // Print the new anonymized proxy URL
+
+  // Launch the browser with specified options
+  const browser = await puppeteer.launch({
+    headless: true, // Run browser in headless mode (no UI)
+    // args: [`--proxy-server=${newProxyUrl}`], // Use the anonymized proxy
+  });
+
+  // Create a new page in the browser
+  const page = await browser.newPage();
+  // Navigate to Google Maps and search for the keyword
+  let searchUrl = "https://www.google.com/maps/search/";
+  if (name && location)
+    searchUrl += `${encodeURIComponent(name)}+${encodeURIComponent(location)}/`;
+  else if (name) searchUrl += `${encodeURIComponent(name)}/`;
+  else if (location) searchUrl += `${encodeURIComponent(location)}/`;
+
+  await page.goto(searchUrl);
+
+  // Try to find and click the accept cookies button, if it appears
+  try {
+    const acceptCookiesSelector = "form:nth-child(2)";
+    await page.waitForSelector(acceptCookiesSelector, { timeout: 5000 });
+    await page.click(acceptCookiesSelector);
+
+    console.log("Clicked accept cookies", acceptCookiesSelector);
+  } catch (error) {
+    // If the selector is not found or times out, catch the error and continue
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // Extract data from the loaded search results
+  const result = await page.evaluate(() => {
+    let data = {};
+
+    // Business name
+    try {
+      data.title = document.querySelector("div > h1").textContent.trim();
+    } catch (error) {}
+
+    // Business type
+    try {
+      data.type = document
+        .querySelector("div[class=fontBodyMedium]>span>span>button")
+        .textContent.trim();
+    } catch (error) {}
+
+    // Extract phone numbers from the text, using regex to match formats
+    try {
+      const phoneRegex =
+        /((\+?\d{1,2}[ -]?)?(\(?\d{3}\)?[ -]?\d{3,4}[ -]?\d{4}|\(?\d{2,3}\)?[ -]?\d{2,3}[ -]?\d{2,3}[ -]?\d{2,3}))/g;
+
+      const divs = document.querySelectorAll("button > div > div > div");
+
+      let phoneNumber = null;
+
+      for (const div of divs) {
+        const text = div.textContent.trim();
+        const matches = text.match(phoneRegex);
+
+        if (matches && matches.length > 0) {
+          phoneNumber = matches[0].replace(/[ -]/g, "");
+          break; // dès qu'on en trouve un, on arrête
+        }
+      }
+
+      data.phone = phoneNumber;
+    } catch (error) {}
+
+    // Business address
+    try {
+      data.address = item
+        .querySelector('button[data-item-id="address"]>div>div>div')
+        .textContent.trim();
+    } catch (error) {}
+
+    // Extract business code plus
+    try {
+      data.codePlus = document
+        .querySelector('button[data-item-id="oloc"]>div>div>div')
+        .textContent.trim();
+    } catch (error) {}
+
+    // Business website
+    try {
+      const websiteRegex = /\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b/;
+
+      const text = document
+        .querySelector('a[data-item-id="authority"] > div > div > div')
+        .textContent.trim();
+
+      const website =
+        document.querySelector("a").getAttribute("href") ??
+        text.match(websiteRegex)[0];
+      data.website = website;
+    } catch (error) {}
+
+    // Business image URL
+    try {
+      data.imageUrl = document
+        .querySelector('div >button>img[decoding="async"]')
+        .getAttribute("src");
+    } catch (error) {}
+    return data; // Return the extracted data for each item
+  });
+
+  await browser.close(); // Close the browser
+  return result; // Return the filtered results
+}
 
 // (async () => {
-//   const name = "lawyer"; // Define the search keyword
-//   const location = "Togo"; // Define the location for the search
-//   const res = await googleScraper(name, location); // Call the Google scraper function
-//   console.log(res);
+//   const name = "22210303";
+//   // const location = "paris";
+
+//   const enricherData = await Enricher(name);
+//   console.log("Enricher data", enricherData);
 // })();
+
+const Google = { Scraper, Enricher };
+module.exports = Google;
