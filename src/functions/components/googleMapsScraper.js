@@ -83,50 +83,80 @@ async function Scraper(name, location) {
     const items = Array.from(
       document.querySelectorAll('div[role="feed"] > div > div[jsaction]')
     );
+
     return items.map((item) => {
-      const data = {};
+      let data = {};
+
+      // Extract the title, link, and website from each search result, handling errors gracefully
+      try {
+        data.title = item.querySelector(".fontHeadlineSmall").textContent;
+      } catch (error) {}
 
       try {
-        data.title =
-          item.querySelector(".fontHeadlineSmall")?.textContent || null;
-      } catch {}
-      try {
-        data.link = item.querySelector("a")?.href || null;
-      } catch {}
+        data.link = item.querySelector("a").getAttribute("href");
+      } catch (error) {}
 
       try {
+        // Extract the website link from the search result
+        // Select all anchor tags that start with 'http'
+        // and filter out Google-related links
         const anchors = item.querySelectorAll("a[href^='http']");
-        data.website =
-          Array.from(anchors)
-            .map((a) => a.href)
-            .find(
-              (href) =>
-                !href.includes("google") &&
-                !href.includes("/maps/") &&
-                !href.includes("/search")
-            ) || null;
-      } catch {}
-
-      try {
-        const rating = item
-          .querySelector('.fontBodyMedium > span[role="img"]')
-          ?.ariaLabel?.split(" ")
-          .map((t) => parseFloat(t.replace(",", ".")))
-          .filter((n) => !isNaN(n));
-        if (rating) {
-          [data.stars, data.reviews] = rating;
+        for (let anchor of anchors) {
+          const href = anchor.getAttribute("href");
+          if (
+            !href.includes("google") &&
+            !href.includes("/maps/") &&
+            !href.includes("/search")
+          ) {
+            data.website = href;
+            break;
+          }
         }
-      } catch {}
+      } catch (error) {}
 
+      // Extract the rating and number of reviews
+      try {
+        const ratingText = item
+          .querySelector('.fontBodyMedium > span[role="img"]')
+          .getAttribute("aria-label")
+          .split(" ")
+          .map((x) => x.replace(",", "."))
+          .map(parseFloat)
+          .filter((x) => !isNaN(x));
+
+        data.stars = ratingText[0];
+        data.reviews = ratingText[1];
+      } catch (error) {}
+
+      // Extract phone numbers from the text, using regex to match formats
       try {
         const textContent = item.innerText;
         const phoneRegex =
-          /((\+?\d{1,2}[ -]?)?(\(?\d{2,4}\)?[ -]?\d{2,4}[ -]?\d{2,4}[ -]?\d{2,4}))/g;
-        const match = textContent.match(phoneRegex);
-        if (match) data.phone = match[0].replace(/[ -]/g, "");
-      } catch {}
+          /((\+?\d{1,2}[ -]?)?(\(?\d{3}\)?[ -]?\d{3,4}[ -]?\d{4}|\(?\d{2,3}\)?[ -]?\d{2,3}[ -]?\d{2,3}[ -]?\d{2,3}))/g;
 
-      return data;
+        const matches = [...textContent.matchAll(phoneRegex)];
+        let phoneNumbers = matches
+          .map((match) => match[0])
+          .filter((phone) => (phone.match(/\d/g) || []).length >= 10);
+
+        let phoneNumber =
+          phoneNumbers.length > 0
+            ? phoneNumbers[0]
+            : item
+                .querySelector(".fontBodyMedium")
+                .innerText.match(phoneRegex)[0]
+            ? item
+                .querySelector(".fontBodyMedium")
+                .innerText.match(phoneRegex)[0]
+            : null;
+        if (phoneNumber) {
+          phoneNumber = phoneNumber.replace(/[ -]/g, "");
+        }
+
+        data.phone = phoneNumber;
+      } catch (error) {}
+
+      return data; // Return the extracted data for each item
     });
   });
 
@@ -206,7 +236,7 @@ async function Enricher(name, location) {
         if (text && text.length > 0) {
           const match = text.match(/\d+/g);
           if (match) {
-            data.ratingCount = parseInt(match[0], 10);
+            data.stars = parseInt(match[0], 10);
             break; // Dès qu'on trouve un, on sort
           }
         }
@@ -222,7 +252,7 @@ async function Enricher(name, location) {
         if (text && text.length > 0) {
           const match = text.match(/\d+/g);
           if (match) {
-            data.totalReview = parseInt(match[0], 10);
+            data.reviews = parseInt(match[0], 10);
             break; // Dès qu'on trouve un, on sort
           }
         }
@@ -238,3 +268,8 @@ async function Enricher(name, location) {
 
 // ===== Export Functions (if needed) =====
 module.exports = { Scraper, Enricher };
+
+// (async () => {
+//   const result = await Scraper("Lawyer", "France");
+//   console.log(result);
+// })();
