@@ -20,6 +20,12 @@ const ScrapingModule = () => {
   const { user } = useAuth();
   const { jobs, isLoading, error, fetchJobs, createJob, updateJob, deleteJob } =
     useScrapingStore();
+  // const jobId = jobs.id;
+  // const { status, results: jobResutl } = useJobSSE(
+  //   "6bf91c7a-ee19-42f7-9113-3e875d8adf5c"
+  // );
+  // console.log("JOB STATUS: ", status);
+  // console.log("JOB Resutl Count: ", jobResutl);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "new";
@@ -55,8 +61,16 @@ const ScrapingModule = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (selectedSource === "pappers") {
+      setLocation("France");
+    } else {
+      setLocation("");
+    }
+  }, [selectedSource]);
+
   // Update URL when tab changes
-  const handleTabChange = (tab: string, param = {}) => {
+  const handleTabChange = (tab: string) => {
     setSearchParams({ tab });
   };
 
@@ -73,8 +87,9 @@ const ScrapingModule = () => {
       description: "Company profiles and employees",
     },
     {
-      id: "yellow-pages",
-      name: "Yellow Pages",
+      id: "pappers",
+      // name: "Yellow Pages",
+      name: "Pappers",
       description: "Business directories",
     },
     {
@@ -280,6 +295,7 @@ const ScrapingModule = () => {
                   <input
                     type="text"
                     id="location"
+                    disabled={selectedSource === "pappers"}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g., Paris, Lyon, Marseille"
