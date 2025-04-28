@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { Upload, Database, Download, RefreshCw, FileText } from "lucide-react";
 import MappingModule from "../components/utils/MapingDialog";
+import PreviewEnrich from "../components/utils/previewEnrich";
 
 const EnrichmentModule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,18 +58,23 @@ const EnrichmentModule = () => {
       id: "linkedin",
       name: "LinkedIn",
       description: "Employee & decision maker info",
-      status: "Limited Access",
-      statusColor: "yellow",
-      defaultEnabled: true,
+      // status: "Limited Access",
+      status: "Not Connected",
+      // statusColor: "yellow",
+      statusColor: "gray",
+      defaultEnabled: false,
       icon: <Database className="h-5 w-5" />,
     },
     {
       id: "website",
       name: "Website Analysis",
       description: "Extract emails & contact details",
-      status: "Active",
-      statusColor: "green",
-      defaultEnabled: true,
+      // status: "Active",
+      status: "Incoming",
+
+      // statusColor: "green",
+      statusColor: "yellow",
+      defaultEnabled: false,
       icon: <Database className="h-5 w-5" />,
     },
     {
@@ -102,15 +108,24 @@ const EnrichmentModule = () => {
       id: "pappers",
       name: "Pappers API",
       description: "Company legal documents and filings",
-      status: "Not Connected",
-      statusColor: "gray",
-      defaultEnabled: false,
+      status: "Connected",
+      statusColor: "green",
+      defaultEnabled: true,
       icon: <Database className="h-5 w-5" />,
     },
     {
       id: "google",
       name: "Google Places",
       description: "Business locations and reviews",
+      status: "Connected",
+      statusColor: "green",
+      defaultEnabled: true,
+      icon: <Database className="h-5 w-5" />,
+    },
+    {
+      id: "database",
+      name: "Local Resources",
+      description: "Business local resources and directories",
       status: "Connected",
       statusColor: "green",
       defaultEnabled: true,
@@ -181,7 +196,6 @@ const EnrichmentModule = () => {
               </div>
             </div>
           </div>
-
           <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
             <nav className="flex space-x-4">
               <button
@@ -216,10 +230,13 @@ const EnrichmentModule = () => {
               </button>
             </nav>
           </div>
-
+          {/* <div className="w-max flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+            <Upload className="h-4 w-4 mr-2" />
+            Add more Job
+          </div>{" "} */}
           {activeTab === "upload" && (
             <div className="px-6 py-5">
-              <div
+              {/* <div
                 className={`border-2 border-dashed rounded-lg p-12 text-center ${
                   dragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
                 }`}
@@ -253,7 +270,9 @@ const EnrichmentModule = () => {
                     </label>
                   </div>
                 </div>
-              </div>
+              </div> */}
+
+              <PreviewEnrich file={selectedFile} onChange={handleFileChange} />
 
               <div className="mt-6 bg-gray-50 p-4 rounded-md border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">
@@ -329,7 +348,6 @@ const EnrichmentModule = () => {
               </div>
             </div>
           )}
-
           {activeTab === "jobs" && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -438,7 +456,6 @@ const EnrichmentModule = () => {
               </table>
             </div>
           )}
-
           {activeTab === "sources" && (
             <div className="px-6 py-5">
               <div className="space-y-6">
