@@ -325,12 +325,12 @@ const fieldMetadata: {
   },
   email: {
     label: "Adresse e-mail",
-    badge: "secondaire",
+    badge: "clé",
     description: "Adresse e-mail principale de contact.",
   },
   phone: {
     label: "Numéro de téléphone",
-    badge: "secondaire",
+    badge: "clé",
     description: "Numéro de téléphone principal pour joindre l'entreprise.",
   },
   full_name: {

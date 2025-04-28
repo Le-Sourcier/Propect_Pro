@@ -14,7 +14,6 @@ import {
 import useAuth from "../hooks/useAuth";
 import { useScrapingStore } from "../stores/scrapingStore";
 import toast from "react-hot-toast";
-import { useJobSSE } from "../hooks/useJobSSE";
 
 const ScrapingModule = () => {
   const { user } = useAuth();
