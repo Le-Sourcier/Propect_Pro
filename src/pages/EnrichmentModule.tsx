@@ -1,16 +1,42 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { Upload, Database, Download, RefreshCw, FileText } from "lucide-react";
+import { Database, Download, RefreshCw, FileText } from "lucide-react";
 import MappingModule from "../components/utils/MapingDialog";
 import PreviewEnrich from "../components/utils/previewEnrich";
+import axios from "axios";
+import { MappedColumns } from "../components/interface/mappingInterface";
+
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 const EnrichmentModule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "upload";
-  const [dragging, setDragging] = useState(false);
+  const [columns, setColumns] = useState<string[]>([]);
+
   const [selectedFile, setSelectedFile] = useState<File>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const [mappedColumns, setMappedColumns] = useState<MappedColumns>({
+    company_name: "",
+    siret: "",
+    siren: "",
+    domain: "",
+    email: "",
+    phone: "",
+    full_name: "",
+    address: "",
+    zip_code: "",
+    city: "",
+    country: "",
+    naf_code: "",
+    sector: "",
+    employee_count: "",
+  });
+
+  const [selectedForEnrichment, setSelectedForEnrichment] = useState<string[]>(
+    []
+  );
 
   // Mock data for enrichment jobs
   const enrichmentJobs = [
@@ -132,22 +158,59 @@ const EnrichmentModule = () => {
       icon: <Database className="h-5 w-5" />,
     },
   ];
+  const handleStartEnrichment = async () => {
+    // Prepare form data with file and additional body fields
+    const formData = new FormData();
+    formData.append("file", selectedFile!);
+    formData.append("query", "PLOMBIERS GARONNAIS");
+    formData.append("location", "");
+    // Append each requested column (rows) under the "rows[]" key
+    columns.forEach((col) => formData.append("rows[]", col));
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(true);
+    try {
+      const response = await axios.post(
+        BASE_URL + "/job/enrich/file",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          responseType: "blob", // important pour récupérer le CSV
+        }
+      );
+
+      console.log("Réponse du serveur :", response.data);
+      return response.data; // Blob
+    } catch (error) {
+      console.error("Erreur d'envoi vers /enrich/file :", error);
+      throw error;
+    }
   };
 
-  const handleDragLeave = () => {
-    setDragging(false);
-  };
+  const handleUpload = async () => {
+    const formData = new FormData();
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    // Handle file drop here
-    const files = Array.from(e.dataTransfer.files);
-    console.log("Files dropped:", files);
+    const meta = {
+      mapping: mappedColumns,
+      // expected_columns: ["first_name", "last_name", "email", "company"], // optionnel
+      expected_columns: selectedForEnrichment,
+    };
+
+    formData.append("file", selectedFile!);
+    formData.append("meta", JSON.stringify(meta));
+
+    try {
+      const res = await axios.post(BASE_URL + "/job/enrich/mapping", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      // setResponse(res.data);
+      console.log("Response: ", res.data);
+    } catch (error) {
+      console.error("Erreur lors de l'envoi :", error);
+      alert("Une erreur est survenue");
+    }
   };
 
   // Update URL when tab changes
@@ -158,8 +221,7 @@ const EnrichmentModule = () => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      console.log("Selected file:", file);
-      console.log("File name:", file.name);
+
       setSelectedFile(file);
       setIsDialogOpen(true); // Open dialog
     }
@@ -174,6 +236,12 @@ const EnrichmentModule = () => {
     <>
       <MappingModule
         file={selectedFile}
+        columns={columns}
+        setColumns={setColumns}
+        mappedColumns={mappedColumns}
+        setMappedColumns={setMappedColumns}
+        selectedForEnrichment={selectedForEnrichment}
+        setSelectedForEnrichment={setSelectedForEnrichment}
         isOpen={isDialogOpen}
         onClose={handleDialogClose}
       />
@@ -230,48 +298,9 @@ const EnrichmentModule = () => {
               </button>
             </nav>
           </div>
-          {/* <div className="w-max flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-            <Upload className="h-4 w-4 mr-2" />
-            Add more Job
-          </div>{" "} */}
+
           {activeTab === "upload" && (
             <div className="px-6 py-5">
-              {/* <div
-                className={`border-2 border-dashed rounded-lg p-12 text-center ${
-                  dragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <div className="flex flex-col items-center">
-                  <Upload className="h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    Drop your file here
-                  </h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Support for CSV or Excel files with SIRET/SIREN numbers
-                  </p>
-                  <div className="mt-4">
-                    <label
-                      htmlFor="file-upload"
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Select File
-                      <input
-                        id="file-upload"
-                        name="file-upload"
-                        type="file"
-                        className="sr-only"
-                        accept=".csv,.xlsx,.xls"
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div> */}
-
               <PreviewEnrich file={selectedFile} onChange={handleFileChange} />
 
               <div className="mt-6 bg-gray-50 p-4 rounded-md border border-gray-200">
@@ -340,6 +369,7 @@ const EnrichmentModule = () => {
               <div className="mt-6 flex justify-end">
                 <button
                   type="button"
+                  onClick={handleUpload}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
                 >
                   <Database className="h-4 w-4 mr-2" />

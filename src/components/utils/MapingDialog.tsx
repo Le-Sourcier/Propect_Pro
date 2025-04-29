@@ -3,19 +3,18 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { X, Check, Upload, ArrowLeft } from "lucide-react";
 import { ReactModal } from "../ui";
+import { MappedColumns, CompletionStats } from "../interface/mappingInterface";
 
 interface MappingDialogProps {
   file?: File;
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface MappedColumns {
-  [key: string]: string;
-}
-
-interface CompletionStats {
-  [key: string]: number; // % de remplissage par colonne
+  columns: string[];
+  setColumns: (columns: string[]) => void;
+  mappedColumns: MappedColumns;
+  setMappedColumns: React.Dispatch<React.SetStateAction<MappedColumns>>;
+  selectedForEnrichment: string[];
+  setSelectedForEnrichment: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 function MappingModule({ ...props }: MappingDialogProps) {
@@ -31,7 +30,16 @@ function MappingModule({ ...props }: MappingDialogProps) {
       onClose={props.onClose}
       className=""
     >
-      <MappingDialogHelper file={props.file} onClose={props.onClose} />
+      <MappingDialogHelper
+        file={props.file}
+        columns={props.columns}
+        setColumns={props.setColumns}
+        onClose={props.onClose}
+        mappedColumns={props.mappedColumns}
+        setMappedColumns={props.setMappedColumns}
+        selectedForEnrichment={props.selectedForEnrichment}
+        setSelectedForEnrichment={props.setSelectedForEnrichment}
+      />
     </ReactModal>
   );
 }
@@ -39,33 +47,25 @@ function MappingModule({ ...props }: MappingDialogProps) {
 function MappingDialogHelper({
   file,
   onClose,
+  columns,
+  setColumns,
+  mappedColumns,
+  setMappedColumns,
+  selectedForEnrichment,
+  setSelectedForEnrichment,
 }: {
   file: File | undefined;
   onClose: () => void;
+  columns: string[];
+  setColumns: (columns: string[]) => void;
+  mappedColumns: MappedColumns;
+  setMappedColumns: React.Dispatch<React.SetStateAction<MappedColumns>>;
+  selectedForEnrichment: string[];
+  setSelectedForEnrichment: React.Dispatch<React.SetStateAction<string[]>>;
 }) {
-  const [columns, setColumns] = useState<string[]>([]);
   const [dataSample, setDataSample] = useState<any[]>([]);
-  const [mappedColumns, setMappedColumns] = useState<MappedColumns>({
-    company_name: "",
-    siret: "",
-    siren: "",
-    domain: "",
-    email: "",
-    phone: "",
-    full_name: "",
-    address: "",
-    zip_code: "",
-    city: "",
-    country: "",
-    naf_code: "",
-    sector: "",
-    employee_count: "",
-  });
 
   const [completionStats, setCompletionStats] = useState<CompletionStats>({});
-  const [selectedForEnrichment, setSelectedForEnrichment] = useState<string[]>(
-    []
-  );
   const [step, setStep] = useState<"mapping" | "enrichment">("mapping");
 
   useEffect(() => {
@@ -153,8 +153,6 @@ function MappingDialogHelper({
   };
 
   const handleFinalConfirm = () => {
-    console.log("Mapping final :", mappedColumns);
-    console.log("Colonnes à enrichir :", selectedForEnrichment);
     onClose();
   };
 

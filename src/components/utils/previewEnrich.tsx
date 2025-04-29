@@ -103,14 +103,14 @@ function PreviewEnrich({
       </div>
 
       {fileContent.length > 0 && (
-        <div className="border rounded p-4 overflow-auto max-h-96">
+        <div className="border rounded px-4 overflow-auto max-h-96">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-white sticky top-0 z-10">
               <tr>
                 {Object.keys(fileContent[0]).map((key) => (
                   <th
                     key={key}
-                    className="px-3 py-2 text-left font-semibold text-gray-700 border-b"
+                    className="px-3 py-4 text-left font-semibold text-gray-700 border-b"
                   >
                     {key}
                   </th>
@@ -122,7 +122,9 @@ function PreviewEnrich({
                 <tr key={index}>
                   {Object.values(row).map((value, idx) => (
                     <td key={idx} className="px-3 py-2 whitespace-nowrap">
-                      {value as string}
+                      <span className="text-wrap line-clamp-1 max-w-[200px] ">
+                        {value as string}
+                      </span>
                     </td>
                   ))}
                 </tr>

@@ -98,7 +98,6 @@ function MappingDialogHelper({
   };
 
   const handleConfirm = () => {
-    console.log("Mapping confirmed:", mappedColumns);
     onClose();
   };
 
