@@ -1,13 +1,7 @@
 const router = require("express").Router();
 const enrichController = require("../../controllers/components/enrichsmentController");
-const multer = require("multer");
-
-const upload = multer({
-  dest: path.join(__dirname, "../../uploads"),
-});
-
 router
   .post("/enrich", enrichController.enrichData)
-  .post("/", upload.single("file"), enrichController.enrichDataFile);
+  .post("/enrich/file", enrichController.enrichData);
 
 module.exports = router;
