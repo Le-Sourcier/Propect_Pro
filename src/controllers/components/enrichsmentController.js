@@ -4,6 +4,8 @@ const { uploadFile, cleanupTempFile } = require("../../utils");
 const fs = require("fs");
 const path = require("path");
 const { stringify } = require("csv-stringify/sync");
+const { v4: uuidv4 } = require("uuid"); // pour générer un ID unique
+const csvParser = require("csv-parser");
 
 const AVAILABLE_COLUMNS = [
   "entreprise_name",
@@ -139,6 +141,57 @@ const fetchDataWithRetry = async (query, location, retryCount = 0) => {
 };
 
 module.exports = {
+  enrichMapping: async (req, res) => {
+    try {
+      const { file } = req;
+      const meta = JSON.parse(req.body.meta);
+      const { mapping, expected_columns } = meta;
+
+      if (!file || !mapping) {
+        return res
+          .status(400)
+          .json({ error: "File and mapping are required in meta" });
+      }
+
+      const file_id = uuidv4();
+      const result = [];
+
+      // Lecture CSV et mappage
+      fs.createReadStream(file.path)
+        .pipe(csvParser())
+        .on("data", (row) => {
+          const mapped = {};
+          for (const [key, sourceHeader] of Object.entries(mapping)) {
+            mapped[key] = row[sourceHeader] || "";
+          }
+          result.push(mapped);
+        })
+        .on("end", () => {
+          // Conversion vers CSV avec les clés de mapping comme headers
+          const csvOut = stringify(result, {
+            header: true,
+            columns: Object.keys(mapping), // les clés comme headers
+          });
+
+          const outDir = path.join(__dirname, "../../uploads/mapped");
+          if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+          const outPath = path.join(outDir, `mapped_${file_id}.csv`);
+          fs.writeFileSync(outPath, csvOut);
+
+          return res.status(200).json({
+            status: "ok",
+            file_id,
+            path: outPath,
+            mapped_data: result,
+            expected_columns, // optionnel
+          });
+        });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  },
   enrichData: async (req, res) => {
     const { query, location, rows } = req.body;
 

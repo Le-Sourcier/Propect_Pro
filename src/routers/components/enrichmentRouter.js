@@ -9,6 +9,11 @@ const upload = multer({
 
 router
   .post("/enrich", enrichController.enrichData)
+  .post(
+    "/enrich/mapping",
+    upload.single("file"),
+    enrichController.enrichMapping
+  )
   .post("/enrich/file", upload.single("file"), enrichController.enrichDataFile);
 
 module.exports = router;
