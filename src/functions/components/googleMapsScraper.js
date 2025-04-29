@@ -217,12 +217,18 @@ async function Enricher(name, location) {
 
     try {
       const authority = document
-        .querySelector('a[data-item-id="authority"] > div > div > div')
-        ?.textContent.trim();
-      const website =
-        document.querySelector("a")?.href ||
-        authority?.match(/\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b/)?.[0];
-      data.website = website || null;
+        .querySelector('a[data-item-id="authority"]')
+        .getAttribute("href");
+      const website = authority || document.querySelector("a")?.href;
+
+      if (
+        !website.includes("google") &&
+        !website.includes("/maps/") &&
+        !website.includes("/search")
+      ) {
+        data.website = website || null;
+        // break;
+      }
     } catch {}
 
     try {
