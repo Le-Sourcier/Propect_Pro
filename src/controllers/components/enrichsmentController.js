@@ -1,5 +1,9 @@
 const { Google, Pappers } = require("../../functions");
 const { serverMessage } = require("../../utils");
+const { uploadFile, cleanupTempFile } = require("../../utils");
+const fs = require("fs");
+const path = require("path");
+const { stringify } = require("csv-stringify/sync");
 
 const AVAILABLE_COLUMNS = [
   "entreprise_name",
@@ -186,59 +190,26 @@ module.exports = {
       return serverMessage(res, "ENRICHMENT_FAILED");
     }
   },
-
   enrichDataFile: async (req, res) => {
-    const { query, location, rows } = req.body;
-
-    const filePath = req.file.path;
-
-    await uploadFile(req, res).then(() => fs.unlinkSync(filePath));
-
     try {
-      if (!query) {
-        return serverMessage(res, "BAD_REQUEST");
-      }
-
-      const requestedColumns = Array.isArray(rows) ? rows : [];
-      if (requestedColumns.length === 0) {
-        return res.status(400).json({
-          error: true,
-          status: 400,
-          message:
-            "No columns specified. Please specify columns in 'rows' array.",
-          availableColumns: AVAILABLE_COLUMNS,
-        });
-      }
-
-      const invalidColumns = requestedColumns.filter(
-        (col) => !AVAILABLE_COLUMNS.includes(col)
+      const rows = await uploadFile(req);
+      // Each row must contain at least a 'query' and optional 'location'
+      const enrichedRows = await Promise.all(
+        rows.map((r) => fetchDataWithRetry(r.query, r.location))
       );
-      if (invalidColumns.length > 0) {
-        return res.status(400).json({
-          error: true,
-          status: 400,
-          message: "Invalid columns requested",
-          invalidColumns,
-          availableColumns: AVAILABLE_COLUMNS,
-        });
-      }
-
-      const enrichedData = await fetchDataWithRetry(query, location);
-
-      if (!enrichedData) {
-        return serverMessage(res, "NO_DATA_FOUND");
-      }
-
-      const filteredData = filterColumns(enrichedData, requestedColumns);
-
-      return res.status(200).json({
-        error: false,
-        status: 200,
-        message: "Data enriched successfully",
-        data: filteredData,
+      // Generate CSV
+      const csvOut = stringify(enrichedRows, { header: true });
+      const outDir = path.join(__dirname, "../../uploads/enriched");
+      if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+      const outPath = path.join(outDir, `enriched_${Date.now()}.csv`);
+      fs.writeFileSync(outPath, csvOut);
+      // send and cleanup
+      res.download(outPath, (err) => {
+        if (err) console.error("Download error:", err);
+        cleanupTempFile(outPath);
       });
-    } catch (error) {
-      console.error("Error in enrichData:", error);
+    } catch (err) {
+      console.error(err);
       return serverMessage(res, "ENRICHMENT_FAILED");
     }
   },
