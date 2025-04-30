@@ -4,6 +4,7 @@ import { Database } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import toast from "react-hot-toast";
 import { FormField } from "../components/ui";
+import { logger } from "../components/utils/logger";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -38,7 +39,7 @@ const Register = () => {
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }

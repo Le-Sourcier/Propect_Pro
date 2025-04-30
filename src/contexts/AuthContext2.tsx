@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         phone: payload.phone,
       };
       setAccessToken(payload.accessToken);
-      // console.log("New token: ", payload.accessToken);
+      // logger.log("New token: ", payload.accessToken);
 
       setUser(userData);
       return { error: null, data: userData };

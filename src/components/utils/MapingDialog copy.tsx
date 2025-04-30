@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { X, Check, Upload } from "lucide-react";
 import { ReactModal } from "../ui";
+import { logger } from "./logger";
 
 interface MappingDialogProps {
   file?: File;
@@ -63,7 +64,7 @@ function MappingDialogHelper({
     reader.onload = (e) => {
       const data = e.target?.result;
       if (!data) {
-        console.error("Failed to read file: event target is null.");
+        logger.error("Failed to read file: event target is null.");
         return;
       }
 

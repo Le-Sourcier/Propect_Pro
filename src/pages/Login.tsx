@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Database, Lock } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import toast from "react-hot-toast";
+import { logger } from "../components/utils/logger";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,14 +21,14 @@ const Login = () => {
 
       if (error) {
         toast.error(error.message || "Failed to sign in");
-        console.error("ETRR :  ", error);
+        logger.error("ETRR :  ", error);
       } else {
         toast.success("Signed in successfully!");
         navigate("/");
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }

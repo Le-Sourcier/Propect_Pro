@@ -19,12 +19,6 @@ const ScrapingModule = () => {
   const { user } = useAuth();
   const { jobs, isLoading, error, fetchJobs, createJob, updateJob, deleteJob } =
     useScrapingStore();
-  // const jobId = jobs.id;
-  // const { status, results: jobResutl } = useJobSSE(
-  //   "6bf91c7a-ee19-42f7-9113-3e875d8adf5c"
-  // );
-  // console.log("JOB STATUS: ", status);
-  // console.log("JOB Resutl Count: ", jobResutl);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "new";

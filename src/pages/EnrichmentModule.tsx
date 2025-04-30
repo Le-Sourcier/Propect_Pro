@@ -12,6 +12,7 @@ import socket from "../components/utils/socket";
 import toast from "react-hot-toast";
 import { EnrichmentJobsProps } from "../components/interface/jobsInterface";
 import { useErichStore } from "../stores/enrichStore";
+import { logger } from "../components/utils/logger";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -61,14 +62,12 @@ const EnrichmentModule = () => {
     if (user) {
       fetchJobs(user.id);
     }
+    if (error) toast.error(error); //show error
   }, [user]);
 
   React.useEffect(() => {
     socket.on("jobStatusUpdate", (data) => {
-      console.log("📦 Données reçues :", data);
-
       // setJob(data);
-
       switch (data.status) {
         case "completed":
           toast.success(`Task ready for ${data.id}`);
@@ -236,10 +235,10 @@ const EnrichmentModule = () => {
         }
       );
 
-      console.log("Réponse du serveur :", response.data);
+      logger.log("Réponse du serveur :", response.data);
       return response.data; // Blob
     } catch (error) {
-      console.error("Erreur d'envoi vers /enrich/file :", error);
+      logger.error("Erreur d'envoi vers /enrich/file :", error);
       throw error;
     }
   };
@@ -263,11 +262,11 @@ const EnrichmentModule = () => {
         },
       });
       // setResponse(res.data);
-      console.log("Response: ", res.data);
+      logger.log("Response: ", res.data);
       // Navigate to job screen
       handleTabChange("jobs");
     } catch (error) {
-      console.error("Erreur lors de l'envoi :", error);
+      logger.error("Erreur lors de l'envoi :", error);
       if (error instanceof Error) {
         toast.error(`Une erreur est survenue ${error.message}`);
       } else {

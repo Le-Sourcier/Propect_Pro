@@ -55,7 +55,7 @@
 
 //     return data;
 //   } catch (error) {
-//     console.error("Scraping failed:", error);
+//     logger.error("Scraping failed:", error);
 //     throw error;
 //   }
 // }
@@ -69,7 +69,7 @@
 //     if (error) throw error;
 //     return data;
 //   } catch (error) {
-//     console.error("Enrichment failed:", error);
+//     logger.error("Enrichment failed:", error);
 //     throw error;
 //   }
 // }

@@ -152,7 +152,7 @@ export const useDatabase = () => {
         error instanceof Error ? error.message : "Database connection failed";
       setConnectionError(errorMessage);
       toast.error(errorMessage);
-      // console.log("Connection error:", errorMessage);
+      // logger.log("Connection error:", errorMessage);
       return false;
     } finally {
       setIsConnecting(false);
