@@ -21,6 +21,7 @@ const Login = () => {
 
       if (error) {
         toast.error(error.message || "Failed to sign in");
+
         logger.error("ETRR :  ", error);
       } else {
         toast.success("Signed in successfully!");

@@ -34,7 +34,19 @@ export const useErichStore = create<EnrichState>((set) => ({
 
       set({ jobs: data || [], isLoading: false });
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      // set({ error: (error as Error).message, isLoading: false });
+      logger.error(
+        "Erreur lors de la recuperation des données enrichies:",
+        error
+      );
+
+      let message = "Erreur lors de la recuperation des données enrichies:";
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+
+      set({ error: message, isLoading: false });
+      toast.error(message);
     }
   },
 

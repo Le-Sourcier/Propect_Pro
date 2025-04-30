@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   Search,
   Database,
-  Mail,
+  // Mail,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -92,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               Enrichment
             </NavLink>
 
-            <NavLink
+            {/* <NavLink
               to="/email-campaigns"
               className={({ isActive }) =>
                 `flex items-center px-4 py-3 text-sm font-medium rounded-md ${
@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             >
               <Mail size={20} className="mr-3" />
               Email Campaigns
-            </NavLink>
+            </NavLink> */}
 
             <NavLink
               to="/settings"

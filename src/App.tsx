@@ -1,4 +1,4 @@
-import React from "react";
+// import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -15,12 +15,12 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import ScrapingModule from "./pages/ScrapingModule";
 import EnrichmentModule from "./pages/EnrichmentModule";
-import EmailCampaigns from "./pages/EmailCampaigns";
-import CampaignEditor from "./pages/email-campaigns/CampaignEditor";
-import CampaignAnalytics from "./pages/email-campaigns/CampaignAnalytics";
-import TemplateEditor from "./pages/email-campaigns/TemplateEditor";
-import ContactList from "./pages/email-campaigns/ContactList";
-import NewContactList from "./pages/email-campaigns/NewContactList";
+// import EmailCampaigns from "./pages/EmailCampaigns";
+// import CampaignEditor from "./pages/email-campaigns/CampaignEditor";
+// import CampaignAnalytics from "./pages/email-campaigns/CampaignAnalytics";
+// import TemplateEditor from "./pages/email-campaigns/TemplateEditor";
+// import ContactList from "./pages/email-campaigns/ContactList";
+// import NewContactList from "./pages/email-campaigns/NewContactList";
 import Settings from "./pages/settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -84,7 +84,7 @@ function App() {
               </Route>
 
               {/* Email campaign routes */}
-              <Route path="email-campaigns">
+              {/* <Route path="email-campaigns">
                 <Route index element={<EmailCampaigns />} />
                 <Route path="new" element={<CampaignEditor />} />
                 <Route path=":campaignId/edit" element={<CampaignEditor />} />
@@ -99,7 +99,7 @@ function App() {
                 />
                 <Route path="contacts/new" element={<NewContactList />} />
                 <Route path="contacts/:listId" element={<ContactList />} />
-              </Route>
+              </Route> */}
 
               {/* Settings routes */}
               <Route path="settings" element={<Settings />}>
