@@ -52,7 +52,8 @@ export const useErichStore = create<EnrichState>((set) => ({
         return toast.error("Données du job manquantes dans la réponse");
       }
 
-      const jobData = res.data.data;
+      const jobData = res?.data?.data;
+
       logger.log("Job data:", jobData);
 
       set((state) => ({
@@ -65,8 +66,14 @@ export const useErichStore = create<EnrichState>((set) => ({
       return jobData;
     } catch (error) {
       logger.error("Erreur lors de la création du job:", error);
-      set({ error: (error as Error).message, isLoading: false });
-      toast.error("Erreur lors de la création du job.");
+
+      let message = "Erreur lors de la création du job.";
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+
+      set({ error: message, isLoading: false });
+      toast.error(message);
     }
   },
 

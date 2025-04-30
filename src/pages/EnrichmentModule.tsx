@@ -26,72 +26,9 @@ const EnrichmentModule = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "upload";
   const [columns, setColumns] = useState<string[]>([]);
-
+  const [activeTask, setActiveTask] = useState("");
   const [selectedFile, setSelectedFile] = useState<File>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const [mappedColumns, setMappedColumns] = useState<MappedColumns>({
-    company_name: "",
-    siret: "",
-    siren: "",
-    domain: "",
-    email: "",
-    phone: "",
-    full_name: "",
-    address: "",
-    zip_code: "",
-    city: "",
-    country: "",
-    naf_code: "",
-    sector: "",
-    employee_count: "",
-  });
-
-  const ITEMS_PER_PAGE = 20;
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const paginatedJobs = React.useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return enrichmentJobs.slice(start, end);
-  }, [enrichmentJobs, currentPage]);
-
-  const totalPages = Math.ceil(enrichmentJobs.length / ITEMS_PER_PAGE);
-
-  React.useEffect(() => {
-    if (user) {
-      fetchJobs(user.id);
-    }
-    if (error) toast.error(error); //show error
-  }, [user]);
-
-  React.useEffect(() => {
-    socket.on("jobStatusUpdate", (data) => {
-      switch (data.status) {
-        case "completed":
-          toast.success(`Task ready for ${data.name}`);
-          break;
-        case "in_progress":
-          toast.loading(`Task in progress for ${data.name}`);
-          break;
-        case "queued":
-          toast.loading(`Task queued for ${data.name}`);
-          break;
-        case "failed":
-        default:
-          toast.error(`Task failed for ${data.id}`);
-          break;
-      }
-    });
-
-    return () => {
-      socket.off("jobStatusUpdate");
-    };
-  }, []);
-
-  const [selectedForEnrichment, setSelectedForEnrichment] = useState<string[]>(
-    []
-  );
 
   // Data sources configuration
   const dataSources = [
@@ -99,9 +36,9 @@ const EnrichmentModule = () => {
       id: "insee",
       name: "INSEE API",
       description: "Official French business database",
-      status: "Connected",
-      statusColor: "green",
-      defaultEnabled: true,
+      status: "Not Connected",
+      statusColor: "gray",
+      defaultEnabled: false,
       icon: <Database className="h-5 w-5" />,
     },
     {
@@ -140,9 +77,9 @@ const EnrichmentModule = () => {
       id: "sirene",
       name: "SIRENE Database",
       description: "French company registration data",
-      status: "Connected",
-      statusColor: "green",
-      defaultEnabled: true,
+      status: "Not Connected",
+      statusColor: "gray",
+      defaultEnabled: false,
       icon: <Database className="h-5 w-5" />,
     },
     {
@@ -183,6 +120,76 @@ const EnrichmentModule = () => {
     },
   ];
 
+  const sourcesList = [
+    ...dataSources.filter((ds) => ds.defaultEnabled).map((ds) => ds.id),
+  ];
+
+  const [seletedSources, setSeletedSources] = useState<string[]>(sourcesList);
+
+  const [mappedColumns, setMappedColumns] = useState<MappedColumns>({
+    company_name: "",
+    siret: "",
+    siren: "",
+    domain: "",
+    email: "",
+    phone: "",
+    full_name: "",
+    address: "",
+    zip_code: "",
+    city: "",
+    country: "",
+    naf_code: "",
+    sector: "",
+    employee_count: "",
+  });
+
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const paginatedJobs = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return enrichmentJobs.slice(start, end);
+  }, [enrichmentJobs, currentPage]);
+
+  const totalPages = Math.ceil(enrichmentJobs.length / ITEMS_PER_PAGE);
+
+  React.useEffect(() => {
+    if (user) {
+      fetchJobs(user.id);
+    }
+    if (error) toast.error(error); //show error
+  }, [user]);
+
+  React.useEffect(() => {
+    socket.on("jobStatusUpdate", (data) => {
+      setActiveTask(data.id);
+      switch (data.status) {
+        case "completed":
+          toast.success(`Task ready for ${data.name}`);
+          break;
+        case "in_progress":
+          toast.loading(`Task in progress for ${data.name}`);
+          break;
+        case "queued":
+          toast.loading(`Task queued for ${data.name}`);
+          break;
+        case "failed":
+        default:
+          toast.error(`Task failed for ${data.id}`);
+          break;
+      }
+    });
+
+    return () => {
+      socket.off("jobStatusUpdate");
+    };
+  }, []);
+
+  const [selectedForEnrichment, setSelectedForEnrichment] = useState<string[]>(
+    []
+  );
+
   const handleUpload = async () => {
     const formData = new FormData();
 
@@ -190,13 +197,16 @@ const EnrichmentModule = () => {
       mapping: mappedColumns,
       expected_columns: selectedForEnrichment,
       user_id: user?.id,
+      sources: seletedSources,
     };
 
     formData.append("file", selectedFile!);
     formData.append("meta", JSON.stringify(meta));
 
     try {
-      await createJob(formData);
+      const data = await createJob(formData);
+      setActiveTask(data.id);
+
       handleTabChange("jobs"); // navigation
     } catch (error) {
       logger.error("handleUpload failed:", error);
@@ -322,6 +332,14 @@ const EnrichmentModule = () => {
                           type="checkbox"
                           defaultChecked={source.defaultEnabled}
                           disabled={source.status === "Not Connected"}
+                          onClick={() =>
+                            setSeletedSources(
+                              (prev) =>
+                                prev.includes(source.id)
+                                  ? prev.filter((id) => id !== source.id) // si déjà présent → on retire (toggle)
+                                  : [...prev, source.id] // sinon → on ajoute
+                            )
+                          }
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </div>
@@ -367,136 +385,149 @@ const EnrichmentModule = () => {
               </div>
             </div>
           )}
-          {activeTab === "jobs" && isLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500">Loading jobs...</p>
-            </div>
-          ) : paginatedJobs.length === 0 ? (
-            <div className="p-8 flex flex-col justify-center items-center ">
-              <span className="text-gray-500 text-center">
-                No enrichment jobs found.
-              </span>
-              <button
-                onClick={() => handleTabChange("upload")}
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Job
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Records
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Enriched
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Sources
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedJobs.map((job) => (
-                    <tr key={job.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {job.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            job.status === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : job.status === "in_progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {job.status === "completed"
-                            ? "Completed"
-                            : job.status === "in_progress"
-                            ? "In Progress"
-                            : "Queued"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {job.records}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {job.enriched} (
-                        {Math.round((job.enriched / job.records) * 100) || 0}
-                        %)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-wrap gap-1">
-                          {job.sources.map((source, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                            >
-                              {source}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {job.date}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-2">
-                          <FileText className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => downloadFile(job.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </td>
+          {activeTab === "jobs" &&
+            (isLoading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-500">Loading jobs...</p>
+              </div>
+            ) : activeTab === "jobs" && paginatedJobs.length === 0 ? (
+              <div className="p-8 flex flex-col justify-center items-center ">
+                <span className="text-gray-500 text-center">
+                  No enrichment jobs found.
+                </span>
+                <button
+                  onClick={() => handleTabChange("upload")}
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Job
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Name
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Status
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Records
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Enriched
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Sources
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Date
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedJobs.map((job) => (
+                      <tr key={job.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {job.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              job.status === "completed"
+                                ? "bg-green-100 text-green-800"
+                                : job.status === "in_progress"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {job.status === "completed"
+                              ? "Completed"
+                              : job.status === "in_progress"
+                              ? "In Progress"
+                              : "Queued"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.records}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.enriched} (
+                          {Math.round((job.enriched / job.records) * 100) || 0}
+                          %)
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-wrap gap-1">
+                            {job.sources.map((source, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                              >
+                                {source}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            disabled={activeTask === job.id}
+                            className={
+                              !(activeTask === job.id)
+                                ? `text-blue-600 hover:text-blue-900 mr-2`
+                                : `text-gray-600 hover:text-blue-900 mr-2 cursor-not-allowed`
+                            }
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => downloadFile(job.id)}
+                            disabled={activeTask === job.id}
+                            className={` ${
+                              !(activeTask === job.id)
+                                ? "text-blue-600 hover:text-blue-900"
+                                : "text-gray-600 cursor-not-allowed"
+                            } `}
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           {totalPages > 1 && (
             <div className="flex justify-between border-t border-t-[gray] border-opacity-20 py-3 px-6 items-center space-x-2 mt-4">
               <button
