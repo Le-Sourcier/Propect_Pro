@@ -4,17 +4,12 @@ import { useSearchParams } from "react-router-dom";
 import { Database, Download, RefreshCw, FileText } from "lucide-react";
 import MappingModule from "../components/utils/MapingDialog";
 import PreviewEnrich from "../components/utils/previewEnrich";
-import axios from "axios";
 import { MappedColumns } from "../components/interface/mappingInterface";
 import useAuth from "../hooks/useAuth";
-// import { JobStatus } from "../components/interface/jobsInterface";
 import socket from "../components/utils/socket";
 import toast from "react-hot-toast";
-import { EnrichmentJobsProps } from "../components/interface/jobsInterface";
 import { useErichStore } from "../stores/enrichStore";
 import { logger } from "../components/utils/logger";
-
-const BASE_URL = import.meta.env.VITE_API_URL;
 
 const EnrichmentModule = () => {
   const { user } = useAuth();
@@ -26,17 +21,11 @@ const EnrichmentModule = () => {
     fetchJobs,
     downloadFile,
     createJob,
-    updateJob,
-    deleteJob,
   } = useErichStore();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "upload";
   const [columns, setColumns] = useState<string[]>([]);
-  // const [job, setJob] = useState<JobStatus | null>(null);
-  // const [enrichmentJobs, setEnrichmentJobs] = useState<EnrichmentJobsProps[]>(
-  //   []
-  // );
 
   const [selectedFile, setSelectedFile] = useState<File>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -67,16 +56,15 @@ const EnrichmentModule = () => {
 
   React.useEffect(() => {
     socket.on("jobStatusUpdate", (data) => {
-      // setJob(data);
       switch (data.status) {
         case "completed":
-          toast.success(`Task ready for ${data.id}`);
+          toast.success(`Task ready for ${data.name}`);
           break;
         case "in_progress":
-          toast.loading(`Task in progress for ${data.id}`);
+          toast.loading(`Task in progress for ${data.name}`);
           break;
         case "queued":
-          toast.loading(`Task queued for ${data.id}`);
+          toast.loading(`Task queued for ${data.name}`);
           break;
         case "failed":
         default:
@@ -93,37 +81,6 @@ const EnrichmentModule = () => {
   const [selectedForEnrichment, setSelectedForEnrichment] = useState<string[]>(
     []
   );
-
-  // Mock data for enrichment jobs
-  // const enrichmentJobs = [
-  //   {
-  //     id: 1,
-  //     name: "May Restaurants",
-  //     status: "completed",
-  //     records: 122,
-  //     enriched: 98,
-  //     date: "2023-05-15",
-  //     sources: ["INSEE", "LinkedIn", "Website"],
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Lyon Tech Companies",
-  //     status: "in_progress",
-  //     records: 87,
-  //     enriched: 34,
-  //     date: "2023-05-14",
-  //     sources: ["INSEE", "Website"],
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Healthcare Providers",
-  //     status: "queued",
-  //     records: 215,
-  //     enriched: 0,
-  //     date: "2023-05-13",
-  //     sources: ["INSEE", "LinkedIn", "Website", "SIRENE"],
-  //   },
-  // ];
 
   // Data sources configuration
   const dataSources = [
@@ -214,34 +171,42 @@ const EnrichmentModule = () => {
       icon: <Database className="h-5 w-5" />,
     },
   ];
-  const handleStartEnrichment = async () => {
-    // Prepare form data with file and additional body fields
-    const formData = new FormData();
-    formData.append("file", selectedFile!);
-    formData.append("query", "PLOMBIERS GARONNAIS");
-    formData.append("location", "");
-    // Append each requested column (rows) under the "rows[]" key
-    columns.forEach((col) => formData.append("rows[]", col));
 
-    try {
-      const response = await axios.post(
-        BASE_URL + "/job/enrich/file",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          responseType: "blob", // important pour récupérer le CSV
-        }
-      );
+  // const handleUpload = async () => {
+  //   const formData = new FormData();
 
-      logger.log("Réponse du serveur :", response.data);
-      return response.data; // Blob
-    } catch (error) {
-      logger.error("Erreur d'envoi vers /enrich/file :", error);
-      throw error;
-    }
-  };
+  //   const meta = {
+  //     mapping: mappedColumns,
+  //     expected_columns: selectedForEnrichment,
+  //     user_id: user?.id,
+  //   };
+
+  //   formData.append("file", selectedFile!);
+  //   formData.append("meta", JSON.stringify(meta));
+
+  //   try {
+  //     const res = await axios.post(BASE_URL + "/job/enrich/mapping", formData, {
+  //       headers: {
+  //         "Content-Type": "multipart/form-data",
+  //       },
+  //     });
+  //     // setResponse(res.data);
+  //     logger.log("Response: ", res.data);
+  //     // Navigate to job screen
+  //     handleTabChange("jobs");
+  //   } catch (error) {
+  //     logger.error("Erreur lors de l'envoi :", error);
+  //     if (error instanceof Error) {
+  //       toast.error(`Une erreur est survenue ${error.message}`);
+  //     } else {
+  //       toast.error("Une erreur inconnue est survenue");
+  //     }
+  //   }
+
+  //   //  const res = await createJob(formData);
+  // };
+
+  // Update URL when tab changes
 
   const handleUpload = async () => {
     const formData = new FormData();
@@ -256,26 +221,13 @@ const EnrichmentModule = () => {
     formData.append("meta", JSON.stringify(meta));
 
     try {
-      const res = await axios.post(BASE_URL + "/job/enrich/mapping", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      // setResponse(res.data);
-      logger.log("Response: ", res.data);
-      // Navigate to job screen
-      handleTabChange("jobs");
+      await createJob(formData);
+      handleTabChange("jobs"); // navigation
     } catch (error) {
-      logger.error("Erreur lors de l'envoi :", error);
-      if (error instanceof Error) {
-        toast.error(`Une erreur est survenue ${error.message}`);
-      } else {
-        toast.error("Une erreur inconnue est survenue");
-      }
+      logger.error("handleUpload failed:", error);
+      // toast.error déjà déclenché par le store
     }
   };
-
-  // Update URL when tab changes
   const handleTabChange = (tab: string) => {
     setSearchParams({ tab });
   };

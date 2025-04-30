@@ -10,4 +10,7 @@ export const logger = {
   warn: (...args: unknown[]) => {
     if (!isProd) console.warn(...args);
   },
+  info: (...args: unknown[]) => {
+    if (!isProd) console.info(...args);
+  },
 };

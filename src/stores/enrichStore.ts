@@ -3,6 +3,7 @@ import { create } from "zustand";
 import axios from "axios";
 import { EnrichmentJobsProps } from "../components/interface/jobsInterface";
 import toast from "react-hot-toast";
+import { logger } from "../components/utils/logger";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/job/enrich";
 
@@ -11,7 +12,7 @@ interface EnrichState {
   isLoading: boolean;
   error: string | null;
   fetchJobs: (userId: string) => Promise<void>;
-  createJob: (job: Partial<EnrichmentJobsProps>) => Promise<void>;
+  createJob: (formData: FormData) => Promise<any>;
   updateJob: (
     id: string,
     updates: Partial<EnrichmentJobsProps>
@@ -20,7 +21,7 @@ interface EnrichState {
   deleteJob: (id: string) => Promise<void>;
 }
 
-export const useErichStore = create<EnrichState>((set, get) => ({
+export const useErichStore = create<EnrichState>((set) => ({
   jobs: [],
   isLoading: false,
   error: null,
@@ -37,19 +38,35 @@ export const useErichStore = create<EnrichState>((set, get) => ({
     }
   },
 
-  createJob: async (job: Partial<EnrichmentJobsProps>) => {
+  createJob: async (formData: FormData) => {
     try {
       set({ isLoading: true, error: null });
 
-      const res = await axios.post(`${BASE_URL}/mapping`, { ...job });
-      const { data: jobData } = res.data;
+      const res = await axios.post(`${BASE_URL}/mapping`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!res || !res.data) {
+        return toast.error("Données du job manquantes dans la réponse");
+      }
+
+      const jobData = res.data.data;
+      logger.log("Job data:", jobData);
 
       set((state) => ({
         jobs: [jobData, ...state.jobs],
         isLoading: false,
       }));
+
+      toast.success(res.data.message);
+
+      return jobData;
     } catch (error) {
+      logger.error("Erreur lors de la création du job:", error);
       set({ error: (error as Error).message, isLoading: false });
+      toast.error("Erreur lors de la création du job.");
     }
   },
 
