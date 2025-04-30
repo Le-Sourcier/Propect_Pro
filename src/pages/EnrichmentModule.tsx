@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { Database, Download, RefreshCw, FileText } from "lucide-react";
+import { Database, Download, RefreshCw, FileText, Plus } from "lucide-react";
 import MappingModule from "../components/utils/MapingDialog";
 import PreviewEnrich from "../components/utils/previewEnrich";
 import { MappedColumns } from "../components/interface/mappingInterface";
@@ -367,7 +367,25 @@ const EnrichmentModule = () => {
               </div>
             </div>
           )}
-          {activeTab === "jobs" && (
+          {activeTab === "jobs" && isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-500">Loading jobs...</p>
+            </div>
+          ) : paginatedJobs.length === 0 ? (
+            <div className="p-8 flex flex-col justify-center items-center ">
+              <span className="text-gray-500 text-center">
+                No enrichment jobs found.
+              </span>
+              <button
+                onClick={() => handleTabChange("upload")}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Job
+              </button>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -417,71 +435,64 @@ const EnrichmentModule = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {isLoading ? (
-                    <div className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-2 text-gray-500">Loading jobs...</p>
-                    </div>
-                  ) : (
-                    paginatedJobs.map((job) => (
-                      <tr key={job.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {job.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              job.status === "completed"
-                                ? "bg-green-100 text-green-800"
-                                : job.status === "in_progress"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {job.status === "completed"
-                              ? "Completed"
+                  {paginatedJobs.map((job) => (
+                    <tr key={job.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {job.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            job.status === "completed"
+                              ? "bg-green-100 text-green-800"
                               : job.status === "in_progress"
-                              ? "In Progress"
-                              : "Queued"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {job.records}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {job.enriched} (
-                          {Math.round((job.enriched / job.records) * 100) || 0}
-                          %)
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex flex-wrap gap-1">
-                            {job.sources.map((source, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                              >
-                                {source}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {job.date}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-blue-600 hover:text-blue-900 mr-2">
-                            <FileText className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => downloadFile(job.id)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {job.status === "completed"
+                            ? "Completed"
+                            : job.status === "in_progress"
+                            ? "In Progress"
+                            : "Queued"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {job.records}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {job.enriched} (
+                        {Math.round((job.enriched / job.records) * 100) || 0}
+                        %)
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex flex-wrap gap-1">
+                          {job.sources.map((source, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                            >
+                              {source}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {job.date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button className="text-blue-600 hover:text-blue-900 mr-2">
+                          <FileText className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => downloadFile(job.id)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -489,6 +500,7 @@ const EnrichmentModule = () => {
           {totalPages > 1 && (
             <div className="flex justify-between border-t border-t-[gray] border-opacity-20 py-3 px-6 items-center space-x-2 mt-4">
               <button
+                aria-label="Go to previous page"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className={`px-3 py-1 text-sm rounded-md disabled:opacity-50 ${
@@ -503,6 +515,7 @@ const EnrichmentModule = () => {
                 Page {currentPage} of {totalPages}
               </span>
               <button
+                aria-label="Go to next page"
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
