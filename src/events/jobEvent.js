@@ -1,8 +1,13 @@
-// src/events/jobEvents.js
-const EventEmitter = require("events");
+module.exports = (io) => {
+  io.on("connection", (socket) => {
+    console.log("🟢 Nouveau client connecté :", socket.id);
 
-class JobEmitter extends EventEmitter {}
-// Vous pouvez augmenter le nombre max d’écouteurs si nécessaire :
-const jobEmitter = new JobEmitter().setMaxListeners(100);
+    socket.on("someEvent", (data) => {
+      console.log("📩 Données reçues via socket :", data);
+    });
 
-module.exports = jobEmitter;
+    socket.on("disconnect", () => {
+      console.log("🔴 Client déconnecté :", socket.id);
+    });
+  });
+};

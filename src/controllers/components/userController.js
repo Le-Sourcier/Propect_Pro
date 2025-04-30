@@ -152,7 +152,6 @@ module.exports = {
   },
   // Get current user data
   getMe: async (req, res) => {
-    console.log("Hello from getMe");
     try {
       const user = req.user;
       const profile = user.profile;
@@ -165,17 +164,15 @@ module.exports = {
         phone: profile.phone,
       };
 
-      res.json(data);
+      return res.json(data);
     } catch (error) {
-      // console.error(error);
-      serverMessage(res);
+      return serverMessage(res);
     }
   },
   // controllers/auth.js
   refresh: async (req, res) => {
     try {
       const token = req.cookies.refreshToken;
-      console.log("Hello from refresh", JSON.stringify(req));
 
       if (!token) return res.status(401).json({ error: "No token" });
       // Vérifier et extraire userId

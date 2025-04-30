@@ -1,0 +1,7 @@
+company_name,siret,siren,domain,email,phone,full_name,address,zip_code,city,country,naf_code,sector,employee_count
+OpenAI,,,,,,,1 Rue de la Paix,,Paris,,,,
+DevCorp,,,,,,,99 Avenue du Web,,Lyon,,,,
+CodeFactory,,,,,,,Place Bellecour,,Lyon,,,,
+GreenTech,,,,,,,10 Rue Nationale,,Lille,,,,
+NeoBuild,,,,,,,42 Rue des Bâtisseurs,,Bordeaux,,,,
+Ecobank Togo,,,,,,,1 Rue de la Banque,,Lomé,,,,
