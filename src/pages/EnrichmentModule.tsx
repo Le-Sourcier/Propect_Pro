@@ -6,13 +6,36 @@ import MappingModule from "../components/utils/MapingDialog";
 import PreviewEnrich from "../components/utils/previewEnrich";
 import axios from "axios";
 import { MappedColumns } from "../components/interface/mappingInterface";
+import useAuth from "../hooks/useAuth";
+// import { JobStatus } from "../components/interface/jobsInterface";
+import socket from "../components/utils/socket";
+import toast from "react-hot-toast";
+import { EnrichmentJobsProps } from "../components/interface/jobsInterface";
+import { useErichStore } from "../stores/enrichStore";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 const EnrichmentModule = () => {
+  const { user } = useAuth();
+
+  const {
+    jobs: enrichmentJobs,
+    isLoading,
+    error,
+    fetchJobs,
+    downloadFile,
+    createJob,
+    updateJob,
+    deleteJob,
+  } = useErichStore();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "upload";
   const [columns, setColumns] = useState<string[]>([]);
+  // const [job, setJob] = useState<JobStatus | null>(null);
+  // const [enrichmentJobs, setEnrichmentJobs] = useState<EnrichmentJobsProps[]>(
+  //   []
+  // );
 
   const [selectedFile, setSelectedFile] = useState<File>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -34,40 +57,74 @@ const EnrichmentModule = () => {
     employee_count: "",
   });
 
+  React.useEffect(() => {
+    if (user) {
+      fetchJobs(user.id);
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    socket.on("jobStatusUpdate", (data) => {
+      console.log("📦 Données reçues :", data);
+
+      // setJob(data);
+
+      switch (data.status) {
+        case "completed":
+          toast.success(`Task ready for ${data.id}`);
+          break;
+        case "in_progress":
+          toast.loading(`Task in progress for ${data.id}`);
+          break;
+        case "queued":
+          toast.loading(`Task queued for ${data.id}`);
+          break;
+        case "failed":
+        default:
+          toast.error(`Task failed for ${data.id}`);
+          break;
+      }
+    });
+
+    return () => {
+      socket.off("jobStatusUpdate");
+    };
+  }, []);
+
   const [selectedForEnrichment, setSelectedForEnrichment] = useState<string[]>(
     []
   );
 
   // Mock data for enrichment jobs
-  const enrichmentJobs = [
-    {
-      id: 1,
-      name: "May Restaurants",
-      status: "completed",
-      records: 122,
-      enriched: 98,
-      date: "2023-05-15",
-      sources: ["INSEE", "LinkedIn", "Website"],
-    },
-    {
-      id: 2,
-      name: "Lyon Tech Companies",
-      status: "in_progress",
-      records: 87,
-      enriched: 34,
-      date: "2023-05-14",
-      sources: ["INSEE", "Website"],
-    },
-    {
-      id: 3,
-      name: "Healthcare Providers",
-      status: "queued",
-      records: 215,
-      enriched: 0,
-      date: "2023-05-13",
-      sources: ["INSEE", "LinkedIn", "Website", "SIRENE"],
-    },
-  ];
+  // const enrichmentJobs = [
+  //   {
+  //     id: 1,
+  //     name: "May Restaurants",
+  //     status: "completed",
+  //     records: 122,
+  //     enriched: 98,
+  //     date: "2023-05-15",
+  //     sources: ["INSEE", "LinkedIn", "Website"],
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Lyon Tech Companies",
+  //     status: "in_progress",
+  //     records: 87,
+  //     enriched: 34,
+  //     date: "2023-05-14",
+  //     sources: ["INSEE", "Website"],
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Healthcare Providers",
+  //     status: "queued",
+  //     records: 215,
+  //     enriched: 0,
+  //     date: "2023-05-13",
+  //     sources: ["INSEE", "LinkedIn", "Website", "SIRENE"],
+  //   },
+  // ];
 
   // Data sources configuration
   const dataSources = [
@@ -192,8 +249,8 @@ const EnrichmentModule = () => {
 
     const meta = {
       mapping: mappedColumns,
-      // expected_columns: ["first_name", "last_name", "email", "company"], // optionnel
       expected_columns: selectedForEnrichment,
+      user_id: user?.id,
     };
 
     formData.append("file", selectedFile!);
@@ -207,9 +264,15 @@ const EnrichmentModule = () => {
       });
       // setResponse(res.data);
       console.log("Response: ", res.data);
+      // Navigate to job screen
+      handleTabChange("jobs");
     } catch (error) {
       console.error("Erreur lors de l'envoi :", error);
-      alert("Une erreur est survenue");
+      if (error instanceof Error) {
+        toast.error(`Une erreur est survenue ${error.message}`);
+      } else {
+        toast.error("Une erreur inconnue est survenue");
+      }
     }
   };
 
@@ -370,10 +433,11 @@ const EnrichmentModule = () => {
                 <button
                   type="button"
                   onClick={handleUpload}
+                  disabled={isLoading}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
                 >
                   <Database className="h-4 w-4 mr-2" />
-                  Start Enrichment
+                  {isLoading ? "Processing" : "Start Enrichment"}{" "}
                 </button>
               </div>
             </div>
@@ -476,7 +540,10 @@ const EnrichmentModule = () => {
                         <button className="text-blue-600 hover:text-blue-900 mr-2">
                           <FileText className="h-4 w-4" />
                         </button>
-                        <button className="text-blue-600 hover:text-blue-900">
+                        <button
+                          onClick={() => downloadFile(job.id)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
                           <Download className="h-4 w-4" />
                         </button>
                       </td>
