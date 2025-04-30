@@ -93,6 +93,7 @@ module.exports = serverMessage = (res, key, data = []) => {
     case "JOB_FETCHED":
     case "JOB_UPDATED":
     case "JOB_DELETED":
+    case "ENRICH_CREATED":
       status = 200; // OK (successful operation)
       break;
 

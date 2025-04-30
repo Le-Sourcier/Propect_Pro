@@ -75,6 +75,10 @@
       "en":"Task fetched successfully.",
       "fr":"Tâche récupérée avec succès."
     },
+    "ENRICH_CREATED":{
+        "en":"Enrichment task successfully created",
+        "fr":"Tâche d'enrichissement créée avec succès"
+    },
     "USER_UPDATED": {
         "en": "User information updated successfully.",
         "fr": "Informations utilisateur mises à jour avec succès."

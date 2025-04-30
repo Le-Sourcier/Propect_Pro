@@ -138,10 +138,12 @@ const createEnrichmentJob = async (id, user_id, name, sources) => {
 const updateEnrichmentJob = async (io, jobId, records, enriched, link) => {
   const status = enriched > 0 ? "completed" : "failed";
 
+  const job = await EnrichJobs.findByPk(jobId);
   // Emit completion message after job update
   io.emit("jobStatusUpdate", {
-    jobId,
-    status: "completed",
+    id: jobId,
+    status: status,
+    name: job.name,
     records: records,
     enriched: enriched,
     link: link,
@@ -226,18 +228,21 @@ module.exports = {
             console.error
           );
 
-          return res.status(200).json({
-            status: "ok",
-            file_id,
-            path: outPath,
-            mapped_data: result,
-            expected_columns,
-            job_id: job.id,
-          });
+          const data = {
+            id: job.id,
+            name: job.name,
+            status: job.status,
+            records: job.records,
+            enriched: job.enriched,
+            link: job.link,
+            date: job.createdAt,
+            sources: job.sources,
+          };
+          return serverMessage(res, "ENRICH_CREATED", data);
         });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ error: "Internal Server Error" });
+      return serverMessage(res);
     }
   },
 
