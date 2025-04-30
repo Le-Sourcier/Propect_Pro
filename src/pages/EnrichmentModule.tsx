@@ -47,6 +47,17 @@ const EnrichmentModule = () => {
     employee_count: "",
   });
 
+  const ITEMS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const paginatedJobs = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return enrichmentJobs.slice(start, end);
+  }, [enrichmentJobs, currentPage]);
+
+  const totalPages = Math.ceil(enrichmentJobs.length / ITEMS_PER_PAGE);
+
   React.useEffect(() => {
     if (user) {
       fetchJobs(user.id);
@@ -172,42 +183,6 @@ const EnrichmentModule = () => {
     },
   ];
 
-  // const handleUpload = async () => {
-  //   const formData = new FormData();
-
-  //   const meta = {
-  //     mapping: mappedColumns,
-  //     expected_columns: selectedForEnrichment,
-  //     user_id: user?.id,
-  //   };
-
-  //   formData.append("file", selectedFile!);
-  //   formData.append("meta", JSON.stringify(meta));
-
-  //   try {
-  //     const res = await axios.post(BASE_URL + "/job/enrich/mapping", formData, {
-  //       headers: {
-  //         "Content-Type": "multipart/form-data",
-  //       },
-  //     });
-  //     // setResponse(res.data);
-  //     logger.log("Response: ", res.data);
-  //     // Navigate to job screen
-  //     handleTabChange("jobs");
-  //   } catch (error) {
-  //     logger.error("Erreur lors de l'envoi :", error);
-  //     if (error instanceof Error) {
-  //       toast.error(`Une erreur est survenue ${error.message}`);
-  //     } else {
-  //       toast.error("Une erreur inconnue est survenue");
-  //     }
-  //   }
-
-  //   //  const res = await createJob(formData);
-  // };
-
-  // Update URL when tab changes
-
   const handleUpload = async () => {
     const formData = new FormData();
 
@@ -225,7 +200,6 @@ const EnrichmentModule = () => {
       handleTabChange("jobs"); // navigation
     } catch (error) {
       logger.error("handleUpload failed:", error);
-      // toast.error déjà déclenché par le store
     }
   };
   const handleTabChange = (tab: string) => {
@@ -443,67 +417,107 @@ const EnrichmentModule = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {enrichmentJobs.map((job) => (
-                    <tr key={job.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {job.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            job.status === "completed"
-                              ? "bg-green-100 text-green-800"
+                  {isLoading ? (
+                    <div className="p-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-gray-500">Loading jobs...</p>
+                    </div>
+                  ) : (
+                    paginatedJobs.map((job) => (
+                      <tr key={job.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {job.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              job.status === "completed"
+                                ? "bg-green-100 text-green-800"
+                                : job.status === "in_progress"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {job.status === "completed"
+                              ? "Completed"
                               : job.status === "in_progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {job.status === "completed"
-                            ? "Completed"
-                            : job.status === "in_progress"
-                            ? "In Progress"
-                            : "Queued"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {job.records}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {job.enriched} (
-                        {Math.round((job.enriched / job.records) * 100) || 0}%)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-wrap gap-1">
-                          {job.sources.map((source, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                            >
-                              {source}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {job.date}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-2">
-                          <FileText className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => downloadFile(job.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                              ? "In Progress"
+                              : "Queued"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.records}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.enriched} (
+                          {Math.round((job.enriched / job.records) * 100) || 0}
+                          %)
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-wrap gap-1">
+                            {job.sources.map((source, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                              >
+                                {source}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-blue-600 hover:text-blue-900 mr-2">
+                            <FileText className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => downloadFile(job.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           )}
+          {totalPages > 1 && (
+            <div className="flex justify-between border-t border-t-[gray] border-opacity-20 py-3 px-6 items-center space-x-2 mt-4">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 text-sm rounded-md disabled:opacity-50 ${
+                  currentPage === 1
+                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    : "bg-blue-500 text-white hover:bg-blue-600 cursor-pointer"
+                }`}
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 text-sm rounded-md disabled:opacity-50 ${
+                  currentPage === totalPages
+                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    : "bg-blue-500 text-white hover:bg-blue-600 cursor-pointer"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
           {activeTab === "sources" && (
             <div className="px-6 py-5">
               <div className="space-y-6">
