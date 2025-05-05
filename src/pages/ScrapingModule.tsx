@@ -655,7 +655,7 @@ const ScrapingModule = () => {
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
                         onClick={() => handleTabChange("results", job.id)}
                       >
-                        {new Date(job.createdAt).toLocaleDateString()}
+                        {job.createdAt}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {job.status === "running" ? (
