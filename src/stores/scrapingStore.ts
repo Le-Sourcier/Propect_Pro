@@ -17,15 +17,18 @@ export interface ScrapingJob {
 
 interface ScrapingState {
   jobs: ScrapingJob[];
+  selectedJob?: ScrapingJob | null;
   isLoading: boolean;
   error: string | null;
   fetchJobs: (userId: string) => Promise<void>;
+  fetchJobById: (jobId: string) => Promise<void>;
   createJob: (job: Partial<ScrapingJob>) => Promise<void>;
   updateJob: (id: string, updates: Partial<ScrapingJob>) => Promise<void>;
   deleteJob: (id: string) => Promise<void>;
+  resetSelectedJob: () => void; // 👈 ajouter ceci
 }
 
-export const useScrapingStore = create<ScrapingState>((set, get) => ({
+export const useScrapingStore = create<ScrapingState>((set) => ({
   jobs: [],
   isLoading: false,
   error: null,
@@ -37,6 +40,18 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
       const { data } = res.data;
 
       set({ jobs: data || [], isLoading: false });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+    }
+  },
+
+  fetchJobById: async (id: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const res = await axios.get(`${BASE_URL}/single/` + id);
+      const { data } = res.data;
+
+      set({ selectedJob: data, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
@@ -87,4 +102,5 @@ export const useScrapingStore = create<ScrapingState>((set, get) => ({
       set({ error: (error as Error).message, isLoading: false });
     }
   },
+  resetSelectedJob: () => set({ selectedJob: null }), // 👈 ajouter ceci
 }));

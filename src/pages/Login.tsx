@@ -20,7 +20,7 @@ const Login = () => {
       const { error } = await login(email, password);
 
       if (error) {
-        toast.error(error.message || "Failed to sign in");
+        toast.error(`${error}` || "Failed to sign in");
 
         logger.error("ETRR :  ", error);
       } else {

@@ -32,13 +32,20 @@ const Register = () => {
       const { error } = await signUp(email, password, fname, lname, phone);
 
       if (error) {
-        toast.error(error.message || "Failed to sign up");
+        const message =
+          (error as any)?.response?.data?.message || "Failed to sign up";
+
+        toast.error(message);
       } else {
         toast.success("Account created! You can now sign in.");
         navigate("/login");
       }
     } catch (error) {
-      toast.error("An unexpected error occurred");
+      const message =
+        (error as any)?.response?.data?.message ||
+        "An unexpected error occurred";
+
+      toast.error(message);
       logger.error(error);
     } finally {
       setLoading(false);

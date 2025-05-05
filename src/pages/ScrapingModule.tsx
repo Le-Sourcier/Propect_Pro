@@ -5,20 +5,21 @@ import {
   Play,
   Pause,
   X,
-  Filter,
   Settings as SettingsIcon,
-  Search,
   Plus,
   RotateCcw,
 } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import { useScrapingStore } from "../stores/scrapingStore";
 import toast from "react-hot-toast";
+import socket from "../components/utils/socket";
+import ViewScrapingResult from "../components/utils/viewScrapingResult";
 
 const ScrapingModule = () => {
   const { user } = useAuth();
   const { jobs, isLoading, error, fetchJobs, createJob, updateJob, deleteJob } =
     useScrapingStore();
+  // const [jobId, setJobId] = useState("");
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "new";
@@ -54,6 +55,30 @@ const ScrapingModule = () => {
     }
   }, [user]);
 
+  React.useEffect(() => {
+    socket.on("jobStatusUpdate", (data) => {
+      switch (data.status) {
+        case "completed":
+          toast.success(`Task ready for ${data.name}`);
+          break;
+        case "in_progress":
+          // toast.loading(`Task in progress for ${data.name}`);
+          break;
+        case "queued":
+          toast.loading(`Task queued for ${data.name}`);
+          break;
+        case "failed":
+        default:
+          toast.error(`Task failed for ${data.id}`);
+          break;
+      }
+    });
+
+    return () => {
+      socket.off("jobStatusUpdate");
+    };
+  }, []);
+
   useEffect(() => {
     if (selectedSource === "pappers") {
       setLocation("France");
@@ -63,8 +88,16 @@ const ScrapingModule = () => {
   }, [selectedSource]);
 
   // Update URL when tab changes
-  const handleTabChange = (tab: string) => {
-    setSearchParams({ tab });
+  // const handleTabChange = (tab: string) => {
+  //   setSearchParams({ tab });
+  // };
+
+  const handleTabChange = (tab: string, jobId?: string) => {
+    const params: Record<string, string> = { tab };
+    if (jobId) {
+      params.jobId = jobId;
+    }
+    setSearchParams(params);
   };
 
   // Available scraping sources
@@ -575,19 +608,28 @@ const ScrapingModule = () => {
                   {jobs.map((job) => (
                     <tr
                       key={job.id}
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleTabChange("results")}
+                      className="hover:bg-gray-50"
+                      // onClick={() => handleTabChange("results", job.id)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {job.source}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer"
+                        onClick={() => handleTabChange("results", job.id)}
+                      >
                         {job.query}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                        onClick={() => handleTabChange("results", job.id)}
+                      >
                         {job.location}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td
+                        className="px-6 py-4 whitespace-nowrap cursor-pointer"
+                        onClick={() => handleTabChange("results", job.id)}
+                      >
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             job.status === "completed"
@@ -603,10 +645,16 @@ const ScrapingModule = () => {
                             job.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                        onClick={() => handleTabChange("results", job.id)}
+                      >
                         {job.results}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                        onClick={() => handleTabChange("results", job.id)}
+                      >
                         {new Date(job.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -621,7 +669,7 @@ const ScrapingModule = () => {
                         ) : job.status === "pending" ? (
                           <button
                             onClick={() => handleStartJob(job.id)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
+                            className="z-50 text-blue-600 hover:text-blue-900 mr-3"
                           >
                             <Play className="h-4 w-4" />
                           </button>
@@ -648,32 +696,7 @@ const ScrapingModule = () => {
           </div>
         )}
 
-        {activeTab === "results" && (
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-              <div className="relative rounded-md w-full sm:w-64">
-                <input
-                  type="text"
-                  className="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="Search results..."
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </button>
-            </div>
-
-            <div className="h-64 flex items-center justify-center text-gray-500 border border-dashed border-gray-300 rounded-md">
-              <span className="text-sm">
-                Select a scraping job to view results
-              </span>
-            </div>
-          </div>
-        )}
+        {activeTab === "results" && <ViewScrapingResult />}
       </div>
     </div>
   );

@@ -3,5 +3,6 @@ export interface MappedColumns {
 }
 
 export interface CompletionStats {
-  [key: string]: number; // % de remplissage par colonne
+  total: number;
+  completed: number;
 }

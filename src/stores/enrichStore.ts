@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import axios from "axios";
+import axios, { AxiosProgressEvent } from "axios";
 import { EnrichmentJobsProps } from "../components/interface/jobsInterface";
 import toast from "react-hot-toast";
 import { logger } from "../components/utils/logger";
@@ -12,7 +12,12 @@ interface EnrichState {
   isLoading: boolean;
   error: string | null;
   fetchJobs: (userId: string) => Promise<void>;
-  createJob: (formData: FormData) => Promise<any>;
+  createJob: (
+    formData: FormData,
+    options?: {
+      onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
+    }
+  ) => Promise<any>;
   updateJob: (
     id: string,
     updates: Partial<EnrichmentJobsProps>
@@ -50,15 +55,27 @@ export const useErichStore = create<EnrichState>((set) => ({
     }
   },
 
-  createJob: async (formData: FormData) => {
+  createJob: async (
+    formData: FormData,
+    options?: {
+      onUploadProgress?:
+        | ((progressEvent: AxiosProgressEvent) => void)
+        | undefined;
+    }
+  ) => {
     try {
       set({ isLoading: true, error: null });
 
-      const res = await axios.post(`${BASE_URL}/mapping`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await axios.post(
+        "http://localhost:3000/api/job/enrich/mapping",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: options?.onUploadProgress,
+        }
+      );
 
       if (!res || !res.data) {
         return toast.error("Données du job manquantes dans la réponse");

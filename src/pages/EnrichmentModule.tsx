@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { Database, Download, RefreshCw, FileText, Plus } from "lucide-react";
-import MappingModule from "../components/utils/MapingDialog";
-import PreviewEnrich from "../components/utils/previewEnrich";
-import { MappedColumns } from "../components/interface/mappingInterface";
+import SelectFile from "../components/utils/selectFile";
 import useAuth from "../hooks/useAuth";
 import socket from "../components/utils/socket";
 import toast from "react-hot-toast";
 import { useErichStore } from "../stores/enrichStore";
-import { logger } from "../components/utils/logger";
+import MappingModule from "../components/utils/mapping/MappingModule";
+import { MappedColumns } from "../components/interface/mappingInterface";
 
 const EnrichmentModule = () => {
   const { user } = useAuth();
@@ -20,14 +19,13 @@ const EnrichmentModule = () => {
     error,
     fetchJobs,
     downloadFile,
-    createJob,
   } = useErichStore();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "upload";
   const [columns, setColumns] = useState<string[]>([]);
   const [activeTask, setActiveTask] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File>();
+  // const [selectedFile, setSelectedFile] = useState<File>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Data sources configuration
@@ -169,7 +167,7 @@ const EnrichmentModule = () => {
           toast.success(`Task ready for ${data.name}`);
           break;
         case "in_progress":
-          toast.loading(`Task in progress for ${data.name}`);
+          // toast.loading(`Task in progress for ${data.name}`);
           break;
         case "queued":
           toast.loading(`Task queued for ${data.name}`);
@@ -190,59 +188,29 @@ const EnrichmentModule = () => {
     []
   );
 
-  const handleUpload = async () => {
-    const formData = new FormData();
-
-    const meta = {
-      mapping: mappedColumns,
-      expected_columns: selectedForEnrichment,
-      user_id: user?.id,
-      sources: seletedSources,
-    };
-
-    formData.append("file", selectedFile!);
-    formData.append("meta", JSON.stringify(meta));
-
-    try {
-      const data = await createJob(formData);
-      setActiveTask(data.id);
-
-      handleTabChange("jobs"); // navigation
-    } catch (error) {
-      logger.error("handleUpload failed:", error);
-    }
-  };
   const handleTabChange = (tab: string) => {
     setSearchParams({ tab });
-  };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-
-      setSelectedFile(file);
-      setIsDialogOpen(true); // Open dialog
-    }
   };
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
-    // setSelectedFile(undefined);
   };
 
   return (
     <>
-      <MappingModule
-        file={selectedFile}
-        columns={columns}
-        setColumns={setColumns}
-        mappedColumns={mappedColumns}
-        setMappedColumns={setMappedColumns}
-        selectedForEnrichment={selectedForEnrichment}
-        setSelectedForEnrichment={setSelectedForEnrichment}
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
-      />
+      {isDialogOpen && (
+        <MappingModule
+          // file={selectedFile}
+          columns={columns}
+          setColumns={setColumns}
+          mappedColumns={mappedColumns}
+          setMappedColumns={setMappedColumns}
+          selectedForEnrichment={selectedForEnrichment}
+          setSelectedForEnrichment={setSelectedForEnrichment}
+          isOpen={isDialogOpen}
+          onClose={handleDialogClose}
+        />
+      )}
       <div className="space-y-6">
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
@@ -299,7 +267,7 @@ const EnrichmentModule = () => {
 
           {activeTab === "upload" && (
             <div className="px-6 py-5">
-              <PreviewEnrich file={selectedFile} onChange={handleFileChange} />
+              <SelectFile />
 
               <div className="mt-6 bg-gray-50 p-4 rounded-md border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">
@@ -370,18 +338,6 @@ const EnrichmentModule = () => {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleUpload}
-                  disabled={isLoading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  {isLoading ? "Processing" : "Start Enrichment"}{" "}
-                </button>
               </div>
             </div>
           )}
@@ -466,6 +422,8 @@ const EnrichmentModule = () => {
                                 ? "bg-green-100 text-green-800"
                                 : job.status === "in_progress"
                                 ? "bg-blue-100 text-blue-800"
+                                : job.status === "failed"
+                                ? "bg-red-100 text-red-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
@@ -473,6 +431,8 @@ const EnrichmentModule = () => {
                               ? "Completed"
                               : job.status === "in_progress"
                               ? "In Progress"
+                              : job.status === "failed"
+                              ? "Failed"
                               : "Queued"}
                           </span>
                         </td>

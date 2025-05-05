@@ -84,7 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { error: null, data: user };
     } catch (error: any) {
-      return { error, data: null };
+      const message = error.response?.data?.message || "Login failed";
+
+      return { error: message, data: null };
     } finally {
       setLoading(false);
     }
@@ -116,7 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return { error: null, data: user };
     } catch (error: any) {
-      return { error, data: null };
+      const message = error.response?.data?.message || "Register failed";
+
+      return { error: message, data: null };
     } finally {
       setLoading(false);
     }
