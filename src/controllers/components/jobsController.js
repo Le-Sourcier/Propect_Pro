@@ -2,7 +2,7 @@ const { Google, Pappers } = require("./../../functions");
 const { scraping_jobs: Jobs, Users } = require("../../models");
 const db = require("./../../models");
 const { serverMessage } = require("../../utils");
-const jobEmitter = require("../../events/jobEvent");
+const dayjs = require("dayjs");
 
 module.exports = {
     // Create new job
@@ -54,7 +54,18 @@ module.exports = {
             if (!jobs || jobs.length < 0) {
                 return serverMessage(res, "NO_JOBS_FOUND");
             }
-            res.status(200).json(jobs);
+            const data = jobs.map((job) => {
+                const plainJob = job.get({ plain: true });
+                return {
+                    ...plainJob,
+                    updatedAt: dayjs(plainJob.createdAt).format(
+                        "ddd MMM YYYY HH:mm"
+                    ),
+                };
+            });
+
+            res.status(200).json({ data });
+            // res.status(200).json(jobs);
         } catch (error) {
             // res.status(500).json({ error: "Unable to fetch jobs" });
             console.error("UNABLE_TO_FETCH_JOBS,", error);
@@ -62,22 +73,46 @@ module.exports = {
         }
     },
 
-    // Get single job by ID
-    getJobWithDetails: async (req, res) => {
+    // Get all job created with user ID
+    getJobByList: async (req, res) => {
         try {
             const job = await Jobs.findAll({
                 where: { user_id: req.params.id },
             });
 
             if (!job) {
-                // return res.status(404).json({ error: "Job not found" });
+                return serverMessage(res, "JOB_NOT_FOUND");
+            }
+
+            const data = job.map((j) => {
+                const plainJob = j.get({ plain: true });
+                return {
+                    ...plainJob,
+                    createdAt: dayjs(plainJob.createdAt).format(
+                        "ddd MMM YYYY HH:mm"
+                    ),
+                };
+            });
+
+            return serverMessage(res, "JOB_FETCHED", data);
+        } catch (error) {
+            res.status(500).json({ error: "Failed to get job" });
+            console.error("FAILED_TO_GET_JOB,", error);
+            return serverMessage(res, "FAILED_TO_GET_JOB");
+        }
+    },
+
+    // Get single job by ID
+    getJobWithDetails: async (req, res) => {
+        try {
+            const job = await Jobs.findByPk(req.params.id);
+
+            if (!job) {
                 return serverMessage(res, "JOB_NOT_FOUND");
             }
 
             return serverMessage(res, "JOB_FETCHED", job);
         } catch (error) {
-            res.status(500).json({ error: "Failed to get job" });
-            // console.error("FAILED_TO_GET_JOB,", error);
             return serverMessage(res, "FAILED_TO_GET_JOB");
         }
     },
