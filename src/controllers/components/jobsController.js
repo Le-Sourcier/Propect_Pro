@@ -87,6 +87,7 @@ module.exports = {
         try {
             const jobId = req.params.id;
             const updates = req.body;
+            const io = req.app.get("io");
 
             const job = await Jobs.findByPk(jobId);
             if (!job) {
@@ -120,10 +121,14 @@ module.exports = {
 
                 JobType.then(async (results) => {
                     console.log("Scraping completed for job:", job.id);
-                    console.log("Results:", results);
                     await job.update({
                         status: "completed",
                         results: results.length,
+                    });
+
+                    io.emit("jobStatusUpdate", {
+                        status: job.status,
+                        name: job.name + "scraping",
                     });
                 }).catch(async (err) => {
                     console.error("Scraping failed for job:", job.id, err);
