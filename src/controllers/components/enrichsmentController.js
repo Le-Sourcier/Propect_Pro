@@ -1,741 +1,576 @@
-const dayjs = require("dayjs");
 const { Google, Pappers } = require("../../functions");
 const { enrich_jobs: EnrichJobs, Users } = require("../../models");
-const { serverMessage } = require("../../utils");
 const fs = require("fs");
 const path = require("path");
 const mime = require("mime-types");
+const dayjs = require("dayjs");
 const { stringify } = require("csv-stringify/sync");
+const { parse } = require("csv-parse/sync");
 const { v4: uuidv4 } = require("uuid");
-const csvParser = require("csv-parser");
+const { serverMessage } = require("../../utils");
 
-const AVAILABLE_COLUMNS = [
-  "entreprise_name",
-  "type",
-  "phone_number",
-  "address",
-  "website",
-  "stars_count",
-  "reviews_count",
-  "siren_number",
-  "siret_number",
-  "naf_code",
-  "activite_principale",
-  "employees_count",
-  "full_name",
-  "email_address",
-];
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
-
-const formatAddress = (siege) => {
-  if (!siege) return null;
-  const parts = [];
-  if (siege.numero_voie) parts.push(siege.numero_voie);
-  if (siege.type_voie) parts.push(siege.type_voie);
-  if (siege.libelle_voie) parts.push(siege.libelle_voie);
-  if (siege.complement_adresse) parts.push(siege.complement_adresse);
-  if (siege.code_postal) parts.push(siege.code_postal);
-  if (siege.ville) parts.push(siege.ville);
-  if (siege.pays) parts.push(siege.pays);
-  return parts.join(" ");
-};
-
-const mergeAndFormatData = (googleData, pappersData) => {
-  if (!googleData && (!pappersData || !pappersData.length)) return null;
-
-  const pappers = pappersData && pappersData.length ? pappersData[0] : null;
-  const baseData = {
-    entreprise_name: pappers?.nom_entreprise || null,
-    type: null,
-    phone_number: null,
-    address: pappers?.siege ? formatAddress(pappers.siege) : null,
-    website: null,
-    stars_count: null,
-    reviews_count: null,
-    siren_number: pappers?.siren || null,
-    siret_number: pappers?.siege?.siret_formate || null,
-    naf_code: pappers?.code_naf || null,
-    activite_principale: null,
-    employees_count: null,
-    full_name: pappers?.dirigeant || null,
-    email_address: null,
-  };
-
-  if (googleData) {
-    baseData.type = googleData.type || baseData.type;
-    baseData.phone_number = googleData.phone || baseData.phone_number;
-    baseData.address = baseData.address || googleData.address;
-    baseData.website = googleData.website || baseData.website;
-    baseData.stars_count = googleData.stars || baseData.stars_count;
-    baseData.reviews_count = googleData.reviews || baseData.reviews_count;
-    baseData.activite_principale =
-      googleData.type || baseData.activite_principale;
-  }
-
-  return baseData;
-};
-
-const filterColumns = (data, columns) => {
-  if (!data || !columns || !columns.length) return data;
-  const filteredData = {};
-  columns.forEach((column) => {
-    if (AVAILABLE_COLUMNS.includes(column) && data.hasOwnProperty(column)) {
-      filteredData[column] = data[column];
+/**
+ * Enriches company data by combining information from Pappers and Google APIs.
+ *
+ * Logic flow:
+ * 1. Query Pappers with the provided search term
+ * 2. If Pappers returns data, use the company name to search Google
+ *    (with location if provided, or fall back to Pappers address)
+ * 3. If both sources return data, merge them
+ * 4. If Pappers fails but Google succeeds, return Google data
+ * 5. If both fail, return null
+ *
+ * @param {string} query - Search term (company name, SIREN, SIRET)
+ * @param {string|null} location - Optional location to refine Google search
+ * @returns {Promise<Object|null>} - The enriched company data or null if not found
+ */
+async function enrichCompanyData(query, location = null) {
+    console.log(query);
+    // Step 1: Query Pappers API
+    let pappersData = null;
+    try {
+        // Determine if query is a SIREN/SIRET number
+        if (_isSiren(query) || _isSiret(query)) {
+            // console.log("SIREN/SIRET detected", query);
+            pappersData = await Pappers.enrich(query);
+        } else {
+            // Regular company name search
+            pappersData = await Pappers.enrich(query);
+        }
+    } catch (error) {
+        console.log(`Pappers API error: ${error.message}`);
     }
-  });
-  return filteredData;
-};
 
-const fetchDataWithRetry = async (query, location, retryCount = 0) => {
-  try {
-    const pappersDataArray = await Pappers.enrich(query);
+    // Step 2: Prepare for Google search
+    let googleQuery = query;
+    let googleLocation = location;
+
+    // If Pappers returned data, refine Google search with company name
+    if (pappersData && pappersData.nom_entreprise) {
+        googleQuery = pappersData.nom_entreprise;
+
+        // If no location provided, use Pappers address as fallback location
+        if (!location && pappersData.siege) {
+            const address = pappersData.siege;
+            googleLocation = address.ville
+                ? `${address.adresse_ligne_1}, ${address.code_postal} ${address.ville}, ${address.pays}`
+                : address.adresse_ligne_1;
+        }
+    }
+
+    // Step 3: Query Google API
     let googleData = null;
+    try {
+        googleData = await Google.Enricher(googleQuery, googleLocation);
+    } catch (error) {
+        console.log(`Google API error: ${error.message}`);
 
-    if (pappersDataArray?.length > 0 && /^\d+$/.test(query)) {
-      const companyName = pappersDataArray[0].nom_entreprise;
-      if (companyName) {
-        googleData = await Google.Enricher(companyName, location);
-      }
-    } else {
-      googleData = await Google.Enricher(query, location);
+        // If we have Pappers data but Google failed, return Pappers data only
+        if (pappersData) {
+            return formatResult(pappersData);
+        }
+
+        // Both APIs failed
+        return null;
     }
 
-    const enrichedData = mergeAndFormatData(googleData, pappersDataArray);
-    const hasData =
-      enrichedData &&
-      Object.values(enrichedData).some((value) => value !== null);
+    // Step 4: Merge data if appropriate
+    if (pappersData && googleData) {
+        const mergedData = {
+            ...pappersData,
+            type: googleData.type,
+            phone_number: googleData.phone_number,
+            website: googleData.website,
+            stars: googleData.stars,
+            reviews: googleData.reviews,
+            address: googleData.address,
+            codePlus: googleData.codePlus,
+        };
 
-    if (!hasData && retryCount < MAX_RETRIES) {
-      console.log(`Retry ${retryCount + 1}/${MAX_RETRIES}`);
-      await new Promise((res) => setTimeout(res, RETRY_DELAY));
-      return fetchDataWithRetry(query, location, retryCount + 1);
+        return formatResult(mergedData);
     }
 
-    return enrichedData;
-  } catch (error) {
-    if (retryCount < MAX_RETRIES) {
-      await new Promise((res) => setTimeout(res, RETRY_DELAY));
-      return fetchDataWithRetry(query, location, retryCount + 1);
+    // Step 5: Handle case where only one API returned data
+    if (pappersData) {
+        return formatResult(pappersData);
     }
-    console.log("Error in fetch data with retry: ", error);
-  }
-};
 
-const createEnrichmentJob = async (id, user_id, name, sources) => {
-  return await EnrichJobs.create({
-    id,
-    user_id,
-    name,
-    sources,
-    records: 0,
-    enriched: 0,
-    link: null,
-  });
-};
+    if (googleData) {
+        return formatResult(googleData);
+    }
 
-const updateEnrichmentJob = async (io, jobId, records, enriched, link) => {
-  const status = enriched > 0 ? "completed" : "failed";
+    // Step 6: No data found
+    return null;
+}
 
-  const job = await EnrichJobs.findByPk(jobId);
-  // Emit completion message after job update
-  io.emit("jobStatusUpdate", {
-    id: jobId,
-    status: status,
-    name: job.name,
-    records: records,
-    enriched: enriched,
-    link: link,
-  });
+/**
+ * Helper function to check if value is a valid SIREN number
+ * @param {string} val - Value to check
+ * @returns {boolean} - True if valid SIREN
+ */
+function _isSiren(val) {
+    return /^\d{9}$/.test(val);
+}
 
-  return await EnrichJobs.update(
-    { records, enriched, link, status },
-    { where: { id: jobId } }
-  );
-};
+/**
+ * Helper function to check if value is a valid SIRET number
+ * @param {string} val - Value to check
+ * @returns {boolean} - True if valid SIRET
+ */
+function _isSiret(val) {
+    return /^\d{14}$/.test(val);
+}
 
-const enrichDataFile = async (io, rows, file_id, jobId) => {
-  const enrichedRows = await Promise.all(
-    rows.map((r) =>
-      fetchDataWithRetry(r.company_name || r.phone || r.siren, r.location)
-    )
-  );
+/**
+ * Format result from APIs into standardized structure
+ * @param {Object} res - Response object from either API
+ * @returns {Object} - Formatted result
+ */
+function formatResult(res) {
+    return {
+        dirigeant: res.full_name || res.dirigeant,
+        nom_entreprise: res.nom_entreprise,
+        type: res.type,
+        phone_number: res.phone_number,
+        website: res.website,
+        stars_count: res.stars,
+        reviews_count: res.reviews,
+        siren_number: res.siren_number,
+        forme_juridique: res.forme_juridique,
+        categorie_juridique: res.categorie_juridique,
+        code_naf: res.code_naf,
+        siret_number: res.siret_number || res.siege?.siret,
+        adresse_ligne_1: res.adresse_ligne_1 || res.siege?.adresse_ligne_1,
+        adresse_ligne_2: res.adresse_ligne_2 || res.siege?.adresse_ligne_2,
+        code_postal: res.code_postal || res.siege?.code_postal,
+        ville: res.ville || res.siege?.ville,
+        pays: res.pays || res.siege?.pays,
+        code_pays: res.code_pays || res.siege?.code_pays,
+    };
+}
 
-  const cleanedRows = enrichedRows.filter(Boolean);
-  const csvOut = stringify(cleanedRows, {
-    header: true,
-    columns: AVAILABLE_COLUMNS,
-  });
+async function processAndEnrichData(filePath, mapping, file_id, io) {
+    try {
+        // Read and parse CSV file
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        const records = parse(fileContent, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true,
+        });
 
-  const outDir = path.join(__dirname, "../../uploads/enriched");
-  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+        const enrichedRecords = [];
+        let enrichedCount = 0;
+        const totalRecords = records.length;
 
-  const outPath = path.join(outDir, `enriched_${file_id}.csv`);
-  fs.writeFileSync(outPath, csvOut);
+        // Update initial job status
+        const initialJob = await EnrichJobs.findByPk(file_id);
+        await initialJob.update({ status: "in_progress" });
 
-  await updateEnrichmentJob(
-    io,
-    jobId,
-    rows.length,
-    cleanedRows.length,
-    `/uploads/enriched/enriched_${file_id}.csv`
-  );
+        // Create reverse mapping for easier lookup
+        const reverseMapping = Object.entries(mapping).reduce(
+            (acc, [newKey, oldKey]) => {
+                if (oldKey) acc[oldKey] = newKey;
+                return acc;
+            },
+            {}
+        );
+
+        // Process each record
+        for (const record of records) {
+            let enrichedData = null;
+            const availableKeys = Object.values(reverseMapping);
+
+            // Try SIRET first
+            if (
+                availableKeys.includes("siret") &&
+                record["siret"] &&
+                _isSiret(record["siret"])
+            ) {
+                enrichedData = await enrichCompanyData(record["siret"]);
+            }
+            // Then try SIREN
+            else if (
+                !enrichedData &&
+                availableKeys.includes("siren") &&
+                record["siren"] &&
+                _isSiren(record["siren"])
+            ) {
+                enrichedData = await enrichCompanyData(record["siren"]);
+            }
+            // Finally try company name with address
+            else if (
+                !enrichedData &&
+                availableKeys.includes("company_name") &&
+                record["company_name"]
+            ) {
+                const location = availableKeys.includes("address")
+                    ? record["address"]
+                    : null;
+                enrichedData = await enrichCompanyData(
+                    record["company_name"],
+                    location
+                );
+            }
+
+            // Create enriched record
+            const enrichedRecord = { ...enrichedData };
+            if (enrichedData) {
+                enrichedCount++;
+                // Update only the fields that exist in the mapping
+                for (const [newKey, oldKey] of Object.entries(mapping)) {
+                    if (oldKey && enrichedData[newKey] !== undefined) {
+                        enrichedRecord[oldKey] = enrichedData[newKey];
+                    }
+                }
+            }
+            enrichedRecords.push(enrichedRecord);
+
+            // Update progress every 5 records or when it's the last record
+            if (
+                enrichedRecords.length % 5 === 0 ||
+                enrichedRecords.length === totalRecords
+            ) {
+                const job = await EnrichJobs.findByPk(file_id);
+                await job.update({
+                    enriched: enrichedCount,
+                    status:
+                        enrichedRecords.length === totalRecords
+                            ? "completed"
+                            : "in_progress",
+                });
+
+                io.emit("jobStatusUpdate", {
+                    id: file_id,
+                    status: job.status,
+                    name: job.name,
+                    records: totalRecords,
+                    enriched: enrichedCount,
+                    link: job.link,
+                });
+            }
+        }
+
+        // Create output directory if it doesn't exist
+        const outputDir = path.join(__dirname, "../../uploads/enriched");
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        // Write enriched data to file
+        const outputPath = path.join(outputDir, `enriched_${file_id}.csv`);
+        const csvContent = stringify(enrichedRecords, {
+            header: true,
+            quoted: true,
+        });
+        fs.writeFileSync(outputPath, csvContent);
+
+        // Final job update
+        const finalStatus = enrichedCount > 0 ? "completed" : "failed";
+        const job = await EnrichJobs.findByPk(file_id);
+        await job.update({
+            status: finalStatus,
+            link: outputPath,
+            enriched: enrichedCount,
+        });
+
+        // Final status update
+        io.emit("jobStatusUpdate", {
+            id: file_id,
+            status: "completed",
+            name: job.name,
+            records: totalRecords,
+            enriched: enrichedCount,
+            link: outputPath,
+        });
+
+        return outputPath;
+    } catch (error) {
+        // Update job status to failed
+        const job = await EnrichJobs.findByPk(file_id);
+        await job.update({ status: "failed" });
+
+        io.emit("jobStatusUpdate", {
+            id: file_id,
+            status: "failed",
+            name: job.name,
+            records: job.records,
+            enriched: job.enriched,
+            link: null,
+        });
+
+        console.error("Error processing and enriching data:", error);
+        throw error;
+    }
+}
+
+/**
+ * Count the number of records in a file (excluding header)
+ * @param {string} filePath - Path to the file
+ * @returns {number} - Number of records
+ */
+function countRecords(filePath) {
+    const content = fs.readFileSync(filePath, "utf-8");
+    // Split by newline and subtract 1 for header
+    return content.split("\n").length - 1;
+}
+
+/**
+ * Creates a temporary file with the uploaded content and returns its path
+ * @param {Object} file - The uploaded file object
+ * @returns {string} - Path to the temporary file
+ */
+function saveUploadedFile(file) {
+    const uploadDir = path.join(__dirname, "../../uploads/temp");
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const fileExt = path.extname(file.originalname) || ".csv";
+    const tempPath = path.join(uploadDir, `temp_${uuidv4()}${fileExt}`);
+
+    // Copy the file from multer's temporary location to our temporary location
+    fs.copyFileSync(file.path, tempPath);
+    // Then remove the temporal file from the folder
+    fs.unlinkSync(file.path);
+
+    return tempPath;
+}
+
+async function mappedFile(filePath, file_id, mapping) {
+    try {
+        // Read and parse the CSV file
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        const records = parse(fileContent, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true,
+        });
+
+        if (records.length === 0) {
+            throw new Error("Empty file");
+        }
+
+        // Get the original headers from the first record
+        const originalHeaders = Object.keys(records[0]);
+
+        // Create reverse mapping (old header -> new header)
+        const reverseMapping = {};
+        for (const [newHeader, oldHeader] of Object.entries(mapping)) {
+            if (oldHeader && originalHeaders.includes(oldHeader)) {
+                reverseMapping[oldHeader] = newHeader;
+            }
+        }
+
+        // Map the records
+        const mappedRecords = records.map((record) => {
+            const mappedRecord = {};
+            for (const oldHeader of originalHeaders) {
+                // If this header is in our mapping, use the new header name
+                const newHeader = reverseMapping[oldHeader] || oldHeader;
+                mappedRecord[newHeader] = record[oldHeader];
+            }
+            return mappedRecord;
+        });
+
+        // Create output directory if it doesn't exist
+        const outputDir = path.join(__dirname, "../../uploads/mapped");
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        // Generate output filename
+        const fileExt = path.extname(filePath);
+        const outputPath = path.join(outputDir, `mapped_${file_id}${fileExt}`);
+
+        // Write the mapped file
+        const csvContent = stringify(mappedRecords, {
+            header: true,
+            quoted: true,
+        });
+        fs.writeFileSync(outputPath, csvContent);
+
+        return outputPath;
+    } catch (error) {
+        console.error("Error mapping file:", error);
+        throw error;
+    }
+}
+
+/**
+ *@param {string} id - file unique id for identification
+ *@param {string} user_id - user unique id
+ *@param {string} name - upload original file name
+ *@param {object} sources - list of enrichment source
+ *@param {number} records - number of records in file
+ */
+const createJob = async (id, user_id, name, sources, records) => {
+    return await EnrichJobs.create({
+        id,
+        user_id,
+        name,
+        sources,
+        records,
+        enriched: 0,
+        status: "in_progress",
+        link: null,
+    });
 };
 
 module.exports = {
-  enrichMapping: async (req, res) => {
-    try {
-      const { file } = req;
-      const meta = JSON.parse(req.body.meta);
-      const { mapping, expected_columns, user_id } = meta;
-      const name = file.originalname;
+    enrichFile: async (req, res) => {
+        try {
+            const { file } = req;
+            const meta = JSON.parse(req.body.meta);
+            const { mapping, sources, expected_columns, user_id } = meta;
+            const name = file.originalname;
 
-      if (!file || !mapping || !user_id) {
-        return res.status(400).json({ error: "Missing required meta fields" });
-      }
+            if (sources.length <= 0)
+                return serverMessage(res, "ENRICH_SOURCE_IS_EMPTY");
 
-      const file_id = uuidv4();
-      const result = [];
+            if (!file || !mapping || !user_id) {
+                return serverMessage(res, "REQUIRED_FIELDS_MISSING");
+            }
 
-      fs.createReadStream(file.path)
-        .pipe(csvParser())
-        .on("data", (row) => {
-          const mapped = {};
-          for (const [key, sourceHeader] of Object.entries(mapping)) {
-            mapped[key] = row[sourceHeader] || "";
-          }
-          result.push(mapped);
-        })
-        .on("end", async () => {
-          fs.unlinkSync(file.path);
-          const csvOut = stringify(result, {
-            header: true,
-            columns: Object.keys(mapping),
-          });
+            const file_id = uuidv4();
 
-          const outDir = path.join(__dirname, "../../uploads/mapped");
-          if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+            // Save the uploaded file to a temporary location
+            const tempFilePath = saveUploadedFile(file);
+            const records = countRecords(tempFilePath);
 
-          const outPath = path.join(outDir, `mapped_${file_id}.csv`);
-          fs.writeFileSync(outPath, csvOut);
+            // Reusable constante
+            let mappedFilePath;
 
-          const sources = ["google", "pappers"];
-          const id = file_id;
-          const job = await createEnrichmentJob(id, user_id, name, sources);
+            try {
+                // Create the job first
+                const job = await createJob(
+                    file_id,
+                    user_id,
+                    name,
+                    sources,
+                    records
+                );
 
-          enrichDataFile(req.app.get("io"), result, file_id, job.id).catch(
-            console.error
-          );
+                // Process the file and start enrichment
+                mappedFilePath = await mappedFile(
+                    tempFilePath,
+                    file_id,
+                    mapping
+                );
+                const enrichedFilePath = await processAndEnrichData(
+                    mappedFilePath,
+                    mapping,
+                    file_id,
+                    req.app.get("io")
+                );
 
-          const data = {
-            id: job.id,
-            name: job.name,
-            status: job.status,
-            records: job.records,
-            enriched: job.enriched,
-            link: job.link,
-            date: job.createdAt,
-            sources: job.sources,
-          };
-          return serverMessage(res, "ENRICH_CREATED", data);
-        });
-    } catch (err) {
-      console.error(err);
-      return serverMessage(res);
-    }
-  },
+                if (enrichedFilePath) {
+                    const data = {
+                        id: job.id,
+                        name: job.name.replace(/\.(csv|xls|xlsx|xlsl)$/i, ""),
+                        status: job.status,
+                        records: job.records,
+                        enriched: job.enriched,
+                        link: job.link,
+                        date: dayjs(job.createdAt).format("ddd MMM YYYY HH:mm"),
+                        sources: job.sources,
+                    };
 
-  enrichData: async (req, res) => {
-    const { query, location, rows } = req.body;
+                    // Clean up temporary files
+                    fs.unlinkSync(tempFilePath);
+                    fs.unlinkSync(mappedFilePath);
 
-    try {
-      if (!query) return serverMessage(res, "BAD_REQUEST");
+                    return serverMessage(res, "ENRICH_CREATED", data);
+                }
+            } catch (error) {
+                // Clean up temporary files in case of error
+                if (fs.existsSync(tempFilePath)) {
+                    fs.unlinkSync(tempFilePath);
+                }
+                if (fs.existsSync(mappedFilePath)) {
+                    fs.unlinkSync(mappedFilePath);
+                }
+                throw error;
+            }
 
-      const requestedColumns = Array.isArray(rows) ? rows : [];
-      if (requestedColumns.length === 0) {
-        return res.status(400).json({
-          error: true,
-          message: "No columns specified.",
-          availableColumns: AVAILABLE_COLUMNS,
-        });
-      }
+            return serverMessage(res, "ENRICHMENT_FAILED");
+        } catch (error) {
+            console.error("Error in enrichFile:", error);
+            return serverMessage(res, "SERVER_ERROR");
+        }
+    },
+    getAllJobs: async (req, res) => {
+        const { user_id } = req.body;
 
-      const invalidColumns = requestedColumns.filter(
-        (col) => !AVAILABLE_COLUMNS.includes(col)
-      );
-      if (invalidColumns.length > 0) {
-        return res.status(400).json({
-          error: true,
-          message: "Invalid columns requested",
-          invalidColumns,
-          availableColumns: AVAILABLE_COLUMNS,
-        });
-      }
+        try {
+            const user = await Users.findByPk(user_id);
+            if (!user) {
+                return serverMessage(res, "UNAUTHORIZED_ACCESS");
+            }
 
-      const enrichedData = await fetchDataWithRetry(query, location);
-      if (!enrichedData) return serverMessage(res, "NO_DATA_FOUND");
+            const jobs = await EnrichJobs.findAll({
+                where: { user_id: user.id },
+                order: [["createdAt", "DESC"]],
+            });
 
-      const filteredData = filterColumns(enrichedData, requestedColumns);
+            const result = jobs.map((job) => {
+                const nameWithoutExtension = job.name.replace(
+                    /\.(csv|xls|xlsx|xlsl)$/i,
+                    ""
+                );
 
-      return res.status(200).json({
-        error: false,
-        message: "Data enriched successfully",
-        data: filteredData,
-      });
-    } catch (error) {
-      console.error("Enrichment failed:", error);
-      return res
-        .status(500)
-        .json({ error: true, message: "Internal Server Error" });
-    }
-  },
+                return {
+                    id: job.id,
+                    name: nameWithoutExtension,
+                    status: job.status,
+                    records: job.records,
+                    enriched: parseInt(job.enriched) || 0,
+                    date: dayjs(job.createdAt).format("ddd MMM YYYY HH:mm"),
+                    sources: job.sources,
+                };
+            });
 
-  getAllEnrichJobs: async (req, res) => {
-    const { user_id } = req.body;
+            return serverMessage(res, "DATA_FETCH_SUCCESS", result);
+        } catch (error) {
+            console.error(error);
+            return serverMessage(res, "SERVER_ERROR");
+        }
+    },
+    downloadFile: async (req, res) => {
+        const { fileId } = req.params;
+        const pathToRoot = path.resolve(__dirname, "../..");
+        const enrichedDir = path.join(pathToRoot, "uploads", "enriched");
 
-    try {
-      const user = await Users.findByPk(user_id);
-      if (!user) {
-        return serverMessage(res, "UNAUTHORIZED_ACCESS");
-      }
+        // 1. Get the job from database
+        const job = await EnrichJobs.findByPk(fileId);
+        if (!job || !job.name) {
+            return serverMessage(res, "FILE_NOT_FOUND");
+        }
 
-      const jobs = await EnrichJobs.findAll({
-        where: { user_id: user.id },
-        order: [["createdAt", "DESC"]],
-      });
-
-      const result = jobs.map((job) => {
-        const nameWithoutExtension = job.name.replace(
-          /\.(csv|xls|xlsx|xlsl)$/i,
-          ""
+        // 2. Find the physical file
+        const files = fs.readdirSync(enrichedDir);
+        const matchedFile = files.find((file) =>
+            file.startsWith(`enriched_${fileId}.`)
         );
 
-        return {
-          id: job.id,
-          name: nameWithoutExtension,
-          status: job.status,
-          records: job.records,
-          enriched: parseInt(job.enriched) || 0,
-          date: dayjs(job.createdAt).format("ddd MMM YYYY HH:mm"),
-          sources: job.sources,
-        };
-      });
+        if (!matchedFile) {
+            return serverMessage(res, "FILE_NOT_FOUND");
+        }
 
-      return serverMessage(res, "DATA_FETCH_SUCCESS", result);
-    } catch (error) {
-      console.error(error);
-      return serverMessage(res, "SERVER_ERROR");
-    }
-  },
-  downloadFile: async (req, res) => {
-    const { fileId } = req.params;
-    const pathToRoot = path.resolve(__dirname, "../..");
-    const enrichedDir = path.join(pathToRoot, "uploads", "enriched");
+        // 3. Build paths and MIME type
+        const filePath = path.join(enrichedDir, matchedFile);
+        const finalFileName = job.name;
+        const mimeType =
+            mime.lookup(finalFileName) || "application/octet-stream";
 
-    console.log("File Id: ", fileId);
+        // 4. Add explicit headers
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${finalFileName}"`
+        );
+        res.setHeader("Content-Type", mimeType);
 
-    // 1. Récupérer le job en base
-    const job = await EnrichJobs.findByPk(fileId);
-    if (!job || !job.name) {
-      return serverMessage(res, "FILE_NOT_FOUND");
-    }
-
-    // 2. Rechercher le fichier physique
-    const files = fs.readdirSync(enrichedDir);
-    const matchedFile = files.find((file) =>
-      file.startsWith(`enriched_${fileId}.`)
-    );
-
-    if (!matchedFile) {
-      return serverMessage(res, "FILE_NOT_FOUND");
-    }
-
-    // 3. Construction des chemins et du bon type MIME
-    const filePath = path.join(enrichedDir, matchedFile);
-    const finalFileName = job.name; // ex: test_enrichment.csv
-    const mimeType = mime.lookup(finalFileName) || "application/octet-stream";
-
-    // 4. Ajout des headers explicites
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${finalFileName}"`
-    );
-    res.setHeader("Content-Type", mimeType);
-
-    // 5. Envoi du fichier
-    res.sendFile(filePath);
-  },
-
-  // downloadFile: async (req, res) => {
-  //   const { fileId } = req.params;
-  //   // const enrichedDir = path.join(__dirname, "uploads", "enriched");
-  //   const pathToRoot = path.resolve(__dirname, "../.."); // monte jusqu’à la racine
-  //   const enrichedDir = path.join(pathToRoot, "uploads", "enriched");
-  //   console.log("File Id: ", fileId);
-
-  //   // Lister les fichiers dans le dossier enriched
-  //   const files = fs.readdirSync(enrichedDir);
-  //   const matchedFile = files.find((file) =>
-  //     file.startsWith(`enriched_${fileId}.`)
-  //   );
-
-  //   if (!matchedFile) {
-  //     return serverMessage(res, "FILE_NOT_FOUND");
-  //   }
-
-  //   const filePath = path.join(enrichedDir, matchedFile);
-  //   return res.sendFile(filePath);
-  // },
+        // 5. Send the file
+        res.sendFile(filePath);
+    },
 };
-
-// const { Google, Pappers } = require("../../functions");
-// const { enrich_jobs: EnrichJobs, Users } = require("../../models");
-// const { serverMessage } = require("../../utils");
-// const { uploadFile, cleanupTempFile } = require("../../utils");
-// const fs = require("fs");
-// const path = require("path");
-// const { stringify } = require("csv-stringify/sync");
-// const { v4: uuidv4 } = require("uuid"); // pour générer un ID unique
-// const csvParser = require("csv-parser");
-// const pLimit = require("p-limit");
-
-// const AVAILABLE_COLUMNS = [
-//   "entreprise_name",
-//   "type",
-//   "phone_number",
-//   "address",
-//   "website",
-//   "stars_count",
-//   "reviews_count",
-//   "siren_number",
-//   "siret_number",
-//   "naf_code",
-//   "activite_principale",
-//   "employees_count",
-//   "full_name",
-//   "email_address",
-// ];
-
-// const MAX_RETRIES = 3;
-// const RETRY_DELAY = 2000; // 2 seconds
-
-// const formatAddress = (siege) => {
-//   if (!siege) return null;
-//   const parts = [];
-
-//   if (siege.numero_voie) parts.push(siege.numero_voie);
-//   if (siege.type_voie) parts.push(siege.type_voie);
-//   if (siege.libelle_voie) parts.push(siege.libelle_voie);
-//   if (siege.complement_adresse) parts.push(siege.complement_adresse);
-//   if (siege.code_postal) parts.push(siege.code_postal);
-//   if (siege.ville) parts.push(siege.ville);
-//   if (siege.pays) parts.push(siege.pays);
-
-//   return parts.join(" ");
-// };
-
-// const mergeAndFormatData = (googleData, pappersData) => {
-//   if (!googleData && (!pappersData || !pappersData.length)) {
-//     return null;
-//   }
-
-//   const pappers = pappersData && pappersData.length ? pappersData[0] : null;
-
-//   // Create base data from Pappers
-//   const baseData = {
-//     entreprise_name: pappers?.nom_entreprise || null,
-//     type: null,
-//     phone_number: null,
-//     address: pappers?.siege ? formatAddress(pappers.siege) : null,
-//     website: null,
-//     stars_count: null,
-//     reviews_count: null,
-//     siren_number: pappers?.siren || null,
-//     siret_number: pappers?.siege?.siret_formate || null,
-//     naf_code: pappers?.code_naf || null,
-//     activite_principale: null,
-//     employees_count: null,
-//     full_name: pappers?.dirigeant || null,
-//     email_address: null,
-//   };
-
-//   // If we have Google data, enrich the base data
-//   if (googleData) {
-//     baseData.type = googleData.type || baseData.type;
-//     baseData.phone_number = googleData.phone || baseData.phone_number;
-//     baseData.address = baseData.address || googleData.address;
-//     baseData.website = googleData.website || baseData.website;
-//     baseData.stars_count = googleData.stars || baseData.stars_count;
-//     baseData.reviews_count = googleData.reviews || baseData.reviews_count;
-//     baseData.activite_principale =
-//       googleData.type || baseData.activite_principale;
-//   }
-
-//   return baseData;
-// };
-
-// const filterColumns = (data, columns) => {
-//   if (!data || !columns || !columns.length) return data;
-
-//   const filteredData = {};
-//   columns.forEach((column) => {
-//     if (AVAILABLE_COLUMNS.includes(column) && data.hasOwnProperty(column)) {
-//       filteredData[column] = data[column];
-//     }
-//   });
-//   return filteredData;
-// };
-
-// const fetchDataWithRetry = async (query, location, retryCount = 0) => {
-//   try {
-//     // First try Pappers
-//     const pappersDataArray = await Pappers.enrich(query);
-//     let googleData = null;
-
-//     // If we have Pappers data and it's a SIREN search, try Google with company name
-//     if (pappersDataArray?.length > 0 && /^\d+$/.test(query)) {
-//       const companyName = pappersDataArray[0].nom_entreprise;
-//       if (companyName) {
-//         googleData = await Google.Enricher(companyName, location);
-//       }
-//     } else {
-//       // If not a SIREN search or no Pappers data, try Google with original query
-//       googleData = await Google.Enricher(query, location);
-//     }
-
-//     const enrichedData = mergeAndFormatData(googleData, pappersDataArray);
-
-//     // Check if we have meaningful data
-//     const hasData =
-//       enrichedData &&
-//       Object.values(enrichedData).some((value) => value !== null);
-
-//     if (!hasData && retryCount < MAX_RETRIES) {
-//       console.log(
-//         `Attempt ${retryCount + 1}/${MAX_RETRIES}: No data found, retrying...`
-//       );
-//       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-//       return fetchDataWithRetry(query, location, retryCount + 1);
-//     }
-
-//     return enrichedData;
-//   } catch (error) {
-//     if (retryCount < MAX_RETRIES) {
-//       console.log(
-//         `Attempt ${retryCount + 1}/${MAX_RETRIES}: Error occurred, retrying...`,
-//         error
-//       );
-//       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-//       return fetchDataWithRetry(query, location, retryCount + 1);
-//     }
-//     throw error;
-//   }
-// };
-
-// const enrichDataFile = async (rows, id) => {
-//   try {
-//     const limit = pLimit(5); // 5 requêtes simultanées
-
-//     const enrichedRows = await Promise.all(
-//       rows.map((r) =>
-//         limit(() =>
-//           fetchDataWithRetry(r.company_name || r.phone || r.siren, r.location)
-//         )
-//       )
-//     );
-
-//     const csvOut = stringify(enrichedRows, { header: true });
-//     const outDir = path.join(__dirname, "../../uploads/enriched");
-//     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-
-//     const outPath = path.join(outDir, `enriched_${id}.csv`);
-//     fs.writeFileSync(outPath, csvOut);
-//   } catch (err) {
-//     console.error("Background enrichment failed:", err);
-//   }
-// };
-
-// // Crée un job vide avec les données initiales
-// const createEnrichmentJob = async (user_id, name, sources) => {
-//   try {
-//     const job = await EnrichJobs.create({
-//       user_id,
-//       name,
-//       sources,
-//       records: 0, // Initialement vide
-//       enriched: 0, // Initialement vide
-//       link: null, // Pas encore de lien
-//     });
-
-//     if (!job) {
-//       console.log("Erreur lors de la création du job d'enrichissement");
-//     }
-
-//     return job;
-//   } catch (error) {
-//     console.log(
-//       "Erreur lors de la création du job d'enrichissement :",
-//       error.message
-//     );
-//   }
-// };
-
-// // Met à jour les données après enrichissement
-// const updateEnrichmentJob = async (jobId, records, enriched, link) => {
-//   try {
-//     const job = await EnrichJobs.update(
-//       { records, enriched, link },
-//       { where: { id: jobId } }
-//     );
-
-//     if (!job) {
-//       console.log("Erreur lors de la mise à jour du job d'enrichissement");
-//     }
-
-//     return job;
-//   } catch (error) {
-//     console.log("Erreur lors de la mise à jour du job :", error.message);
-//   }
-// };
-
-// module.exports = {
-//   enrichMapping: async (req, res) => {
-//     try {
-//       const { file } = req;
-//       const meta = JSON.parse(req.body.meta);
-//       const { mapping, expected_columns } = meta;
-
-//       if (!file || !mapping) {
-//         return res
-//           .status(400)
-//           .json({ error: "File and mapping are required in meta" });
-//       }
-
-//       const file_id = uuidv4();
-//       const result = [];
-
-//       // Lecture CSV et mappage
-//       fs.createReadStream(file.path)
-//         .pipe(csvParser())
-//         .on("data", (row) => {
-//           const mapped = {};
-//           for (const [key, sourceHeader] of Object.entries(mapping)) {
-//             mapped[key] = row[sourceHeader] || "";
-//           }
-//           result.push(mapped);
-//         })
-//         .on("end", async () => {
-//           fs.unlinkSync(file.path); // ou cleanupTempFile(file.path);
-//           // Conversion vers CSV avec les clés de mapping comme headers
-//           const csvOut = stringify(result, {
-//             header: true,
-//             columns: Object.keys(mapping), // les clés comme headers
-//           });
-
-//           const outDir = path.join(__dirname, "../../uploads/mapped");
-//           if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-
-//           const outPath = path.join(outDir, `mapped_${file_id}.csv`);
-//           fs.writeFileSync(outPath, csvOut);
-//           const sources = ["google", "pappers"];
-//           // 1. Créer le job
-//           const job = await createEnrichmentJob(user_id, name, sources); //name is the file name
-
-//           // Lancement asynchrone
-//           enrichDataFile(result, file_id).catch(console.error);
-
-//           // 3. Mettre à jour le job avec les résultats
-//           await updateEnrichmentJob(job.id, records, enriched, link);
-
-//           return res.status(200).json({
-//             status: "ok",
-//             file_id,
-//             path: outPath,
-//             mapped_data: result,
-//             expected_columns, // optionnel
-//           });
-//         });
-//     } catch (err) {
-//       console.error(err);
-//       return res.status(500).json({ error: "Internal Server Error" });
-//     }
-//   },
-//   enrichData: async (req, res) => {
-//     const { query, location, rows } = req.body;
-
-//     try {
-//       if (!query) {
-//         return serverMessage(res, "BAD_REQUEST");
-//       }
-
-//       const requestedColumns = Array.isArray(rows) ? rows : [];
-//       if (requestedColumns.length === 0) {
-//         return res.status(400).json({
-//           error: true,
-//           status: 400,
-//           message:
-//             "No columns specified. Please specify columns in 'rows' array.",
-//           availableColumns: AVAILABLE_COLUMNS,
-//         });
-//       }
-
-//       const invalidColumns = requestedColumns.filter(
-//         (col) => !AVAILABLE_COLUMNS.includes(col)
-//       );
-//       if (invalidColumns.length > 0) {
-//         return res.status(400).json({
-//           error: true,
-//           status: 400,
-//           message: "Invalid columns requested",
-//           invalidColumns,
-//           availableColumns: AVAILABLE_COLUMNS,
-//         });
-//       }
-
-//       const enrichedData = await fetchDataWithRetry(query, location);
-
-//       if (!enrichedData) {
-//         return serverMessage(res, "NO_DATA_FOUND");
-//       }
-
-//       const filteredData = filterColumns(enrichedData, requestedColumns);
-
-//       return res.status(200).json({
-//         error: false,
-//         status: 200,
-//         message: "Data enriched successfully",
-//         data: filteredData,
-//       });
-//     } catch (error) {
-//       console.error("Error in enrichData:", error);
-//       return serverMessage(res, "ENRICHMENT_FAILED");
-//     }
-//   },
-//   enrichDataFile: async (req, res) => {
-//     try {
-//       const rows = await uploadFile(req);
-
-//       const limit = pLimit(5); // 5 requêtes simultanées
-
-//       // Each row must contain at least a 'query' and optional 'location'
-//       const enrichedRows = await Promise.all(
-//         rows.map((r) => limit(() => fetchDataWithRetry(r.query, r.location)))
-//       );
-//       // Generate CSV
-//       const csvOut = stringify(enrichedRows, { header: true });
-//       const outDir = path.join(__dirname, "../../uploads/enriched");
-//       if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-//       const outPath = path.join(outDir, `enriched_${Date.now()}.csv`);
-//       fs.writeFileSync(outPath, csvOut);
-//       // send and cleanup
-//       res.download(outPath, (err) => {
-//         if (err) console.error("Download error:", err);
-//         cleanupTempFile(outPath);
-//       });
-//     } catch (err) {
-//       console.error(err);
-//       return serverMessage(res, "ENRICHMENT_FAILED");
-//     }
-//   },
-// };

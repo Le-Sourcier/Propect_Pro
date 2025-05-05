@@ -14,11 +14,12 @@ const app = express();
 const server = http.createServer(app);
 
 const ORIGINE_URL = process.env.ORIGINE_URL;
+console.log("ORIGINE: ", ORIGINE_URL);
 const io = socketIo(server, {
-  cors: {
-    origin: ORIGINE_URL,
-    credentials: true,
-  },
+    cors: {
+        origin: ORIGINE_URL,
+        credentials: true,
+    },
 });
 
 // Sécurité & middlewares
@@ -27,10 +28,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(
-  cors({
-    origin: ORIGINE_URL,
-    credentials: true,
-  })
+    cors({
+        origin: ORIGINE_URL,
+        credentials: true,
+    })
 );
 app.set("trust proxy", 1);
 
@@ -42,20 +43,20 @@ app.use("/api", require("./src/routers"));
 app.set("io", io);
 
 io.on("connection", (socket) => {
-  console.log("Client connecté :", socket.id);
+    console.log("Client connecté :", socket.id);
 });
 
 // silence all console outputs on production
 if (process.env.NODE_ENV === "production") {
-  console.log = () => {};
-  console.warn = () => {};
-  console.info = () => {};
-  console.debug = () => {};
-  console.error; //remains active
+    console.log = () => {};
+    console.warn = () => {};
+    console.info = () => {};
+    console.debug = () => {};
+    console.error; //remains active
 }
 
 // Serveur
 const port = process.env.PORT;
 server.listen(port, () => {
-  console.log(`✅ Server ready on http://localhost:${port}`);
+    console.log(`✅ Server ready on http://localhost:${port}`);
 });

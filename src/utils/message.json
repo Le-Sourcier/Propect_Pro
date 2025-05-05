@@ -103,6 +103,10 @@
       "en":"Task not found.",
       "fr":"Tâche introuvable."
     },
+    "ENRICH_SOURCE_IS_EMPTY":{
+        "en":"The enrichment source cannot be empty. Select at least one source.",
+        "fr":"La source d'enrichissement ne peut pas être vide. Sélectionnez au moins une source."
+    },
     "NO_DATA_FOUND": {
         "en": "No data found for the given criteria.",
         "fr": "Aucune donnée trouvée pour les critères donnés."

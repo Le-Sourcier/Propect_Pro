@@ -6,7 +6,7 @@ router
   .post("/create", jobController.createJob) // Create new scraping job
   .get("/all", jobController.getAllJobs) // Get all scraping jobs
   .get("/get/:id", jobController.getJobWithDetails) // Get single job with user
-  .put("/update/:id", jobController.updateJob) // Update job
+  .put("/update/:id", jobController.startJob) // Update job
   .delete("/delete/:id", jobController.deleteJob) // Delete job
   .get("/:id/events", (req, res) => {
     const jobId = req.params.id;

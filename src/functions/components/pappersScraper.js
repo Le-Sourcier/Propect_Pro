@@ -1,235 +1,184 @@
+// src/functions/pappersEnricher.js
 const fetch = require("node-fetch");
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-
-puppeteer.use(StealthPlugin());
+const InseeSiren = require("./inseeSirenScraper");
 
 const API_TOKEN = "97a405f1664a83329a7d89ebf51dc227b90633c4ba4a2575";
 const BASE_URL = "https://api.pappers.fr/v2";
 const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
 
-// Generic fetcher with basic error handling
+if (!API_TOKEN) {
+    throw new Error("Missing API_PAPPERS_TOKEN");
+}
+
+function isSiren(val) {
+    return /^\d{9}$/.test(val);
+}
+function isSiret(val) {
+    return /^\d{14}$/.test(val);
+}
+
 async function fetchPappers(url) {
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+    const res = await fetch(url);
+    if (!res.ok) {
+        // console.log(res);
+        // throw new Error(`Pappers API error: ${res.statusText}`);
+    }
+    return res.json();
+}
+// 1.0) Given a SIREN, fetch both company data and dirigeants (from suggestion mode)
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.statusText}`);
-  }
+// 1.1) Given a SIREN, fetch both company data and dirigeants
+async function fetchEntrepriseDataSuggestion(siren) {
+    const url = `${BASE_URL}?api_token=${API_TOKEN}&q=${siren}&longueur=9&cibles=siren`;
 
-  return response.json();
+    const data = await fetchPappers(url);
+    const companyName = data?.resultats_siren?.[0]?.nom_entreprise || null;
+    const fullName = [data.prenom, data.nom].filter(Boolean).join(" ");
+
+    return { companyName, fullName };
+}
+async function fetchEntrepriseData(siren) {
+    return await fetchEntrepriseDataSuggestion(siren);
+
+    // try {
+    //     const url =
+    //         `${BASE_URL}/entreprise/cartographie` +
+    //         `?api_token=${API_TOKEN}` +
+    //         `&siren=${siren}` +
+    //         `&inclure_entreprises_dirigees=true` +
+    //         `&inclure_entreprises_citees=false` +
+    //         `&inclure_sci=true` +
+    //         `&autoriser_modifications=true`;
+
+    //     const data = await fetchPappers(url);
+    //     const companyName = data?.entreprises?.[0]?.nom_entreprise || null;
+    //     const dir = Array.isArray(data.personnes) ? data.personnes[0] : null;
+    //     const fullName = dir
+    //         ? [dir.prenom, dir.nom].filter(Boolean).join(" ")
+    //         : null;
+
+    //     return { companyName, fullName };
+    // } catch (error) {
+    //     return await fetchEntrepriseDataSuggestion();
+    // }
 }
 
-// Get company name and full_name from SIREN if necessary
+// 2) Build a recherche URL for free-text lookups
+function buildSearchUrl(q, page = 1) {
+    const encoded = encodeURIComponent(q);
+    return (
+        `${BASE_URL}/recherche` +
+        `?q=${encoded}` +
+        `&api_token=${API_TOKEN}` +
+        `&precision=standard` +
+        `&bases=entreprises,dirigeants,publications` +
+        `&page=${page}` +
+        `&par_page=100` +
+        `&case_sensitive=false`
+    );
+}
+
+// 3) Resolve any input into { siren, companyName, fullName }
 async function resolveQuery(query) {
-  if (isNaN(query)) return { searchQuery: query, full_name: null };
+    const trimmed = query;
 
-  const url = `${BASE_URL}/entreprise/cartographie?api_token=${API_TOKEN}&siren=${query}&inclure_entreprises_dirigees=true&inclure_entreprises_citees=false&inclure_sci=true&autoriser_modifications=true`;
-  const data = await fetchPappers(url);
-
-  const company = data?.entreprises?.[0]?.nom_entreprise;
-  const first_name = data?.personnes?.[0]?.prenom ?? "";
-  const last_name = data?.personnes?.[0]?.nom ?? "";
-  const full_name = `${first_name} ${last_name}`.trim();
-
-  console.log("Dirigeant: ", first_name);
-
-  if (!company) throw new Error("No company found for the provided SIREN.");
-
-  return { searchQuery: company, full_name };
-}
-
-// Fetch all paginated results
-async function fetchAllResults(searchQuery) {
-  const allResults = [];
-  let currentPage = 1;
-  let totalPages = 1;
-
-  do {
-    const url = `${BASE_URL}/recherche?q=${encodeURIComponent(
-      searchQuery
-    )}&api_token=${API_TOKEN}&precision=standard&bases=entreprises,dirigeants,publications&page=${currentPage}&par_page=400&case_sensitive=false`;
-
-    try {
-      const data = await fetchPappers(url);
-
-      if (!Array.isArray(data.resultats)) {
-        console.warn(
-          `Invalid resultats array on page ${currentPage}, skipping.`
-        );
-        break;
-      }
-
-      allResults.push(...data.resultats);
-
-      if (currentPage === 1) {
-        const totalResults = data.total_results ?? 0;
-        totalPages = Math.ceil(totalResults / 400);
-      }
-    } catch (error) {
-      console.warn(`Error on page ${currentPage}: ${error.message}`);
+    // A) If already a SIREN
+    if (isSiren(trimmed)) {
+        const { companyName, fullName } = await fetchEntrepriseData(trimmed);
+        return { siren: trimmed, companyName, fullName };
     }
 
-    currentPage++;
-  } while (currentPage <= totalPages);
+    // B) If a SIRET, first convert to SIREN + name via Insee API
+    if (isSiret(trimmed)) {
+        const info = await InseeSiren.scraper(trimmed);
+        if (!info || !info.siren_number) {
+            throw new Error("Unable to convert SIRET → SIREN");
+        }
+        const { companyName, fullName } = await fetchEntrepriseData(
+            info.siren_number
+        );
+        return {
+            siren: info.siren_number,
+            companyName: companyName || info.nom_entreprise,
+            fullName,
+        };
+    }
 
-  return allResults;
+    // C) Otherwise assume it's a free-text name: do a /recherche → grab the first siren
+    const searchRes = await fetchPappers(buildSearchUrl(trimmed, 1));
+    const first = Array.isArray(searchRes.resultats) && searchRes.resultats[0];
+    if (!first || !first.siren) {
+        return { siren: null, companyName: trimmed, fullName: null };
+    }
+
+    // Now that we have a SIREN, fetch the dirigeant
+    const { companyName, fullName } = await fetchEntrepriseData(first.siren);
+    return {
+        siren: first.siren,
+        companyName: companyName || trimmed,
+        fullName,
+    };
 }
 
-// Clean and format the output
-function formatResults(results, full_name) {
-  return results.map(
-    ({
-      nom_entreprise,
-      forme_juridique,
-      categorie_juridique,
-      siren,
-      code_naf,
-      siege,
-    }) => ({
-      nom_entreprise,
-      forme_juridique,
-      categorie_juridique,
-      siren,
-      code_naf,
-      siege,
-      dirigeant: full_name,
-    })
-  );
+// 4) Fetch all paged enrich results by that resolved companyName
+async function fetchAllResults(searchQuery) {
+    let page = 1,
+        totalPages = 1,
+        all = [];
+
+    do {
+        const data = await fetchPappers(buildSearchUrl(searchQuery, page));
+        if (!Array.isArray(data.resultats)) break;
+        all.push(...data.resultats);
+        if (page === 1) {
+            totalPages = Math.ceil((data.total_results || 0) / 100);
+        }
+        page++;
+    } while (page <= totalPages);
+
+    return all;
 }
 
-// Public functions
+// 5) Format final output
+function formatResults(results, fullName) {
+    return results.map((r) => ({
+        dirigeant: fullName,
+        nom_entreprise: r.nom_entreprise,
+        siren_number: r.siren,
+        forme_juridique: r.forme_juridique,
+        categorie_juridique: r.categorie_juridique,
+        code_naf: r.code_naf,
+        siege: r.siege,
+    }));
+}
+
+// Public scraper entrypoint
 async function scraper(query) {
-  try {
-    const { searchQuery, full_name } = await resolveQuery(query);
-    const results = await fetchAllResults(searchQuery);
-    return formatResults(results, full_name);
-  } catch (error) {
-    console.error("Scraper error:", error.message);
-    return [];
-  }
+    try {
+        const { siren, companyName, fullName } = await resolveQuery(query);
+        const list = await fetchAllResults(companyName);
+        return {
+            siren,
+            companyName,
+            dirigeant: fullName,
+            total: list.length,
+            entreprises: formatResults(list, fullName),
+        };
+    } catch (err) {
+        console.error("Scraper failed:", err);
+        return { error: err.message, total: 0, entreprises: [] };
+    }
 }
 
 async function enrich(query) {
-  return scraper(query);
+    return scraper(query).then((acc) => acc.entreprises[0]);
 }
 
 module.exports = { scraper, enrich };
 
-// const fetch = require("node-fetch");
-// const puppeteer = require("puppeteer-extra");
-// const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-
-// puppeteer.use(StealthPlugin());
-
-// const API_TOKEN = "97a405f1664a83329a7d89ebf51dc227b90633c4ba4a2575";
-// const BASE_URL = "https://api.pappers.fr/v2";
-// const USER_AGENT =
-//   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
-
-// // Generic fetcher with basic error handling
-// async function fetchPappers(url) {
-//   const response = await fetch(url, {
-//     headers: { "User-Agent": USER_AGENT },
-//   });
-
-//   if (!response.ok) {
-//     throw new Error(`Request failed: ${response.statusText}`);
-//   }
-
-//   return response.json();
-// }
-
-// // Get company name from SIREN if necessary
-// async function resolveQuery(query) {
-//   if (isNaN(query)) return query;
-
-//   const url = `${BASE_URL}/entreprise/cartographie?api_token=${API_TOKEN}&siren=${query}&inclure_entreprises_dirigees=true&inclure_entreprises_citees=false&inclure_sci=true&autoriser_modifications=true`;
-//   const data = await fetchPappers(url);
-
-//   const company = data?.entreprises?.[0]?.nom_entreprise;
-//   // Dirigeants names
-//   const first_name = data?.personnes?.[0]?.prenom;
-//   const last_name = data?.personnes?.[0]?.nom;
-//   const full_name = first_name + " " + last_name;
-
-//   if (!company) throw new Error("No company found for the provided SIREN.");
-
-//   return company;
-// }
-
-// // Fetch all paginated results
-// async function fetchAllResults(searchQuery) {
-//   const allResults = [];
-//   let currentPage = 1;
-//   let totalPages = 1;
-
-//   do {
-//     const url = `${BASE_URL}/recherche?q=${encodeURIComponent(
-//       searchQuery
-//     )}&api_token=${API_TOKEN}&precision=standard&bases=entreprises,dirigeants,publications&page=${currentPage}&par_page=400&case_sensitive=false`;
-
-//     try {
-//       const data = await fetchPappers(url);
-
-//       if (!Array.isArray(data.resultats)) {
-//         console.warn(
-//           `Invalid resultats array on page ${currentPage}, skipping.`
-//         );
-//         break;
-//       }
-
-//       allResults.push(...data.resultats);
-
-//       if (currentPage === 1) {
-//         const totalResults = data.total_results ?? 0;
-//         totalPages = Math.ceil(totalResults / 400);
-//       }
-//     } catch (error) {
-//       console.warn(`Error on page ${currentPage}: ${error.message}`);
-//     }
-
-//     currentPage++;
-//   } while (currentPage <= totalPages);
-
-//   return allResults;
-// }
-
-// // Clean and format the output
-// function formatResults(results) {
-//   return results.map(
-//     ({
-//       nom_entreprise,
-//       forme_juridique,
-//       categorie_juridique,
-//       siren,
-//       code_naf,
-//       siege,
-//     }) => ({
-//       nom_entreprise,
-//       forme_juridique,
-//       categorie_juridique,
-//       siren,
-//       code_naf,
-//       siege,
-//     })
-//   );
-// }
-
-// // Public functions
-// async function scraper(query) {
-//   try {
-//     const searchQuery = await resolveQuery(query);
-//     const results = await fetchAllResults(searchQuery);
-//     return formatResults(results);
-//   } catch (error) {}
-// }
-
-// async function enrich(query) {
-//   // In this case, scraper and enrich do exactly the same
-//   return scraper(query);
-// }
-
-// module.exports = { scraper, enrich };
+// (async () => {
+//     // console.log(await enrich("809447071"));        // SIREN
+//     console.log("Enriched: ", await enrich("51393548600029")); // SIRET
+//     // console.log(await enrich("My Company Name"));  // Name search
+// })();
