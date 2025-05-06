@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Download,
   Play,
   Pause,
   X,
@@ -219,10 +218,10 @@ const ScrapingModule = () => {
                 <SettingsIcon className="h-4 w-4 mr-2" />
                 Advanced Settings
               </button>
-              <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+              {/* <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
                 <Download className="h-4 w-4 mr-2" />
                 Export Data
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

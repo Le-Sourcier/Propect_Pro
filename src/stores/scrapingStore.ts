@@ -1,77 +1,12 @@
 import { create } from "zustand";
 
 import axios from "axios";
+import {
+  ScrapingJob,
+  ScrapingState,
+} from "../components/interface/jobsInterface";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/job";
-
-export interface ScrapingJob {
-  id: string;
-  source: string;
-  query: string;
-  location: string;
-  status: "pending" | "running" | "completed" | "failed";
-  results: number;
-  createdAt: string;
-  user_id: string;
-}
-export interface SelectedScrapingJob {
-  id: string;
-  result: SelectedScrapingJobResult[] | [];
-  createdAt: string;
-}
-
-interface Adresse {
-  siret: string;
-  siret_formate: string;
-  nic: string;
-  numero_voie: string | null;
-  indice_repetition: string | null;
-  type_voie: string | null;
-  libelle_voie: string;
-  complement_adresse: string | null;
-  adresse_ligne_1: string;
-  adresse_ligne_2: string | null;
-  code_postal: string;
-  code_commune: string;
-  ville: string;
-  pays: string;
-  code_pays: string;
-}
-
-interface SelectedScrapingJobResult {
-  // Identité de l'entreprise
-  nom_entreprise: string;
-  dirigeant: string;
-  forme_juridique: string;
-  categorie_juridique: string;
-  type?: string; // optionnel car non dans ton exemple
-
-  // Identifiants légaux
-  siren_number: string;
-  code_naf: string;
-
-  // Adresse (imbriquée)
-  siege: Adresse;
-
-  // Infos supplémentaires que tu peux compléter plus tard
-  phone_number?: string;
-  website?: string;
-  reviews?: number;
-  stars?: number;
-  link?: string;
-}
-interface ScrapingState {
-  jobs: ScrapingJob[];
-  selectedJob?: SelectedScrapingJob | null;
-  isLoading: boolean;
-  error: string | null;
-  fetchJobs: (userId: string) => Promise<void>;
-  fetchJobById: (jobId: string) => Promise<void>;
-  createJob: (job: Partial<ScrapingJob>) => Promise<void>;
-  updateJob: (id: string, updates: Partial<ScrapingJob>) => Promise<void>;
-  deleteJob: (id: string) => Promise<void>;
-  resetSelectedJob: () => void; // 👈 ajouter ceci
-}
 
 export const useScrapingStore = create<ScrapingState>((set) => ({
   jobs: [],
@@ -107,6 +42,12 @@ export const useScrapingStore = create<ScrapingState>((set) => ({
           siren_number: e.siren_number,
           code_naf: e.code_naf,
           siege: e.siege,
+          // Add these fields from the API response
+          phone_number: e.phone_number,
+          website: e.website,
+          reviews: e.reviews,
+          stars: e.stars,
+          link: e.link,
         }));
       } catch (err) {
         console.error("Erreur de parsing JSON du champ result :", err);
@@ -115,7 +56,10 @@ export const useScrapingStore = create<ScrapingState>((set) => ({
 
       set({ selectedJob: data, isLoading: false });
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({
+        error: (error as any).response.data.message || "Error fetching job",
+        isLoading: false,
+      });
     }
   },
 
@@ -131,7 +75,10 @@ export const useScrapingStore = create<ScrapingState>((set) => ({
         isLoading: false,
       }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({
+        error: (error as any).response.data.message || "Error creating job",
+        isLoading: false,
+      });
     }
   },
 
@@ -148,7 +95,10 @@ export const useScrapingStore = create<ScrapingState>((set) => ({
         isLoading: false,
       }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({
+        error: (error as any).response.data.message || "Error updating job",
+        isLoading: false,
+      });
     }
   },
 
@@ -161,7 +111,10 @@ export const useScrapingStore = create<ScrapingState>((set) => ({
         isLoading: false,
       }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({
+        error: (error as any).response.data.message || "Error deleting job",
+        isLoading: false,
+      });
     }
   },
   resetSelectedJob: () => set({ selectedJob: null }), // 👈 ajouter ceci
