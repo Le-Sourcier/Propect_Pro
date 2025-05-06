@@ -1,5 +1,9 @@
 const { Google, Pappers } = require("./../../functions");
-const { scraping_jobs: Jobs, Users } = require("../../models");
+const {
+    scraping_jobs: Jobs,
+    scraping_job_results: jobResults,
+    Users,
+} = require("../../models");
 const db = require("./../../models");
 const { serverMessage } = require("../../utils");
 const dayjs = require("dayjs");
@@ -105,7 +109,7 @@ module.exports = {
     // Get single job by ID
     getJobWithDetails: async (req, res) => {
         try {
-            const job = await Jobs.findByPk(req.params.id);
+            const job = await jobResults.findByPk(req.params.id);
 
             if (!job) {
                 return serverMessage(res, "JOB_NOT_FOUND");
@@ -119,12 +123,14 @@ module.exports = {
 
     // Start job
     startJob: async (req, res) => {
+        // const transaction = await db.sequelize.transaction();
         try {
             const jobId = req.params.id;
             const updates = req.body;
             const io = req.app.get("io");
 
             const job = await Jobs.findByPk(jobId);
+            console.log("job", job);
             if (!job) {
                 return serverMessage(res, "JOB_NOT_FOUND");
             }
@@ -158,23 +164,43 @@ module.exports = {
                     console.log("Scraping completed for job:", job.id);
                     await job.update({
                         status: "completed",
-                        results: results.length,
+                        results:
+                            JobSource === "pappers"
+                                ? results.entreprises.length
+                                : results.length,
                     });
+                    console.log("Job status updated to completed");
+
+                    await jobResults.create(
+                        {
+                            id: job.id,
+                            result:
+                                JobSource === "pappers"
+                                    ? results.entreprises
+                                    : results,
+                        }
+                        // { transaction }
+                    );
 
                     io.emit("jobStatusUpdate", {
                         status: job.status,
-                        name: job.name + "scraping",
+                        name: "scraping_" + job.name,
                     });
                 }).catch(async (err) => {
                     console.error("Scraping failed for job:", job.id, err);
                     await job.update({
                         status: "failed",
                     });
+                    io.emit("jobStatusUpdate", {
+                        status: "failed",
+                        name: "scraping_" + job.name,
+                    });
                 });
             }
-
+            // await transaction.commit();
             return serverMessage(res, "JOB_UPDATED", job);
         } catch (error) {
+            // await transaction.rollback();
             return serverMessage(res);
         }
     },

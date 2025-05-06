@@ -178,7 +178,10 @@ async function enrich(query) {
 module.exports = { scraper, enrich };
 
 // (async () => {
-//     // console.log(await enrich("809447071"));        // SIREN
-//     console.log("Enriched: ", await enrich("51393548600029")); // SIRET
-//     // console.log(await enrich("My Company Name"));  // Name search
+//     const query = "Hotels";
+//     const result = await scraper(query);
+//     console.log(
+//         "Result: ",
+//         result.entreprises.map((itm) => itm.siege.siret)
+//     );
 // })();

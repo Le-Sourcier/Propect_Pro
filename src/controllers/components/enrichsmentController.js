@@ -25,7 +25,6 @@ const { serverMessage } = require("../../utils");
  * @returns {Promise<Object|null>} - The enriched company data or null if not found
  */
 async function enrichCompanyData(query, location = null) {
-    console.log(query);
     // Step 1: Query Pappers API
     let pappersData = null;
     try {
@@ -98,6 +97,7 @@ async function enrichCompanyData(query, location = null) {
     if (googleData) {
         return formatResult(googleData);
     }
+    console.log("googleData: ", googleData);
 
     // Step 6: No data found
     return null;

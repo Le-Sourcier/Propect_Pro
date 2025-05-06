@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const logger = require("./src/utils/components/logger");
 require("./db"); //initialize db instance
 require("./src/events/cleanupMapped"); //Auto clean up unsable files from mapped folder
 require("./src/events/dbDownloader"); //Auto download database
@@ -14,7 +15,6 @@ const app = express();
 const server = http.createServer(app);
 
 const ORIGINE_URL = process.env.ORIGINE_URL;
-console.log("ORIGINE: ", ORIGINE_URL);
 const io = socketIo(server, {
     cors: {
         origin: ORIGINE_URL,
@@ -56,7 +56,15 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Serveur
-const port = process.env.PORT;
-server.listen(port, () => {
-    console.log(`✅ Server ready on http://localhost:${port}`);
+const PORT = process.env.PORT;
+const NODE_ENV = process.env.NODE_ENV;
+server.listen(PORT, () => {
+    logger.info(`Server running in ${NODE_ENV} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err) => {
+    logger.error(`Error: ${err.message}`);
+    // Close server & exit process
+    server.close(() => process.exit(1));
 });
