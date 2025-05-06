@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import axios, { AxiosProgressEvent } from "axios";
-import { EnrichmentJobsProps } from "../components/interface/jobsInterface";
+import { EnrichmentJobsProps } from "../components/types/jobsInterface";
 import toast from "react-hot-toast";
 import { logger } from "../components/utils/logger";
 

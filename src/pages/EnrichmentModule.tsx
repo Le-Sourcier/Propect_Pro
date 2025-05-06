@@ -8,7 +8,7 @@ import socket from "../components/utils/socket";
 import toast from "react-hot-toast";
 import { useErichStore } from "../stores/enrichStore";
 import MappingModule from "../components/utils/mapping/MappingModule";
-import { MappedColumns } from "../components/interface/mappingInterface";
+import { MappedColumns } from "../components/types/mappingInterface";
 
 const EnrichmentModule = () => {
   const { user } = useAuth();

@@ -1,6 +1,6 @@
 import { utils, writeFile } from "xlsx";
 import { isColumnEmpty } from "./tableUtils";
-import { SelectedScrapingJobResult } from "../interface/jobsInterface";
+import { SelectedScrapingJobResult } from "../types/jobsInterface";
 
 const getColumnDefinitions = (data: SelectedScrapingJobResult[]) => {
   const columns = [

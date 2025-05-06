@@ -1,10 +1,7 @@
 import { create } from "zustand";
 
 import axios from "axios";
-import {
-  ScrapingJob,
-  ScrapingState,
-} from "../components/interface/jobsInterface";
+import { ScrapingJob, ScrapingState } from "../components/types/jobsInterface";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/job";
 

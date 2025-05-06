@@ -1,4 +1,4 @@
-import { default as FormField } from "./components/formField";
+import { default as Form } from "./components/formField";
 import { default as ReactModal } from "./components/react-modat";
 import { default as LoadingSpinner } from "./components/LoadingSpinner";
 import { default as EmptyState } from "./components/EmptyState";
@@ -7,7 +7,7 @@ import { default as LoadingState } from "./components/LoadingState";
 import { default as ResultsTable } from "./components/ResultsTable";
 
 export {
-  FormField,
+  Form,
   ReactModal,
   LoadingSpinner,
   EmptyState,

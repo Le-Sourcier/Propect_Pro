@@ -3,7 +3,7 @@ import { X, ArrowLeft, Save, Eye, EyeOff } from "lucide-react";
 import MappingProfiles from "./MappingProfiles";
 import MappingInterface from "./MappingInterface";
 import MappingPreview from "./MappingPreview";
-import { MappedColumns } from "../../interface/mappingInterface";
+import { MappedColumns } from "../../types/mappingInterface";
 
 interface MappingDialogProps {
   file?: File;

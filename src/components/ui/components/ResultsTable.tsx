@@ -3,7 +3,7 @@ import { isColumnEmpty, getValueByKey } from "../../utils/tableUtils";
 import {
   ColumnConfig,
   SelectedScrapingJobResult,
-} from "../../interface/jobsInterface";
+} from "../../types/jobsInterface";
 
 interface ResultsTableProps {
   data: SelectedScrapingJobResult[];

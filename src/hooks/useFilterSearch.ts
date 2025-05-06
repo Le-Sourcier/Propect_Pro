@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { SelectedScrapingJobResult } from "../components/interface/jobsInterface";
+import { SelectedScrapingJobResult } from "../components/types/jobsInterface";
 
 export const useFilterSearch = (
   data: SelectedScrapingJobResult[] | undefined

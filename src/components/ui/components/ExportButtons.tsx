@@ -1,7 +1,7 @@
 import React from "react";
 import { FileSpreadsheet, FileDown } from "lucide-react";
 import { exportToExcel, exportToCSV } from "../../utils/exportUtils";
-import { SelectedScrapingJobResult } from "../../interface/jobsInterface";
+import { SelectedScrapingJobResult } from "../../types/jobsInterface";
 
 interface ExportButtonsProps {
   data: SelectedScrapingJobResult[];
