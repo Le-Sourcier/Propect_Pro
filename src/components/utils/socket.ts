@@ -17,6 +17,8 @@ interface ClientToServerEvents {
   // Sending event here
 }
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(BASE_URL);
+// const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(BASE_URL);
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> =
+  io("https:google.com");
 
 export default socket;
