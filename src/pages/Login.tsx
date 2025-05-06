@@ -22,7 +22,8 @@ const Login = () => {
       if (error) {
         toast.error(`${error}` || "Failed to sign in");
 
-        logger.error("ETRR :  ", error);
+        // logger.error("ETRR :  ", error);
+        console.log("Error: ", error);
       } else {
         toast.success("Signed in successfully!");
         navigate("/");
