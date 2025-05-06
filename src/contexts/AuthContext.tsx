@@ -74,7 +74,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<{ error: Error | null; data: any }> => {
     setLoading(true);
     try {
-      const res = await axios.post(`${BASE_URL}/login`, { email, password });
+      const res = await axios.post(`http://161.97.96.229:3000/api/user/login`, {
+        email,
+        password,
+      });
       const { data: user } = res.data;
 
       localStorage.setItem("accessToken", user.accessToken);
