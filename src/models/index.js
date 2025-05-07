@@ -6,22 +6,12 @@ const config = require("../config");
 const basename = path.basename(__filename);
 const db = {};
 
-// const sequelize = new Sequelize(
-//   config.database,
-//   config.username,
-//   config.password,
-//   config
-// );
-
-const sequelize = new Sequelize({
-    dialect: "postgres",
-    host: config.host,
-    port: config.port,
-    username: config.username,
-    password: config.password,
-    database: config.database,
-    logging: false,
-});
+const sequelize = new Sequelize(
+    config.database,
+    config.username,
+    config.password,
+    config
+);
 
 // Fonction récursive pour charger les modèles
 const loadModels = (dir) => {
