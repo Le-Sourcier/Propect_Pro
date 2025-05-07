@@ -45,7 +45,7 @@
     "node-cron": "^3.0.3",
     "nodemon": "^3.1.10",
     "p-limit": "^6.2.0",
-    "pg": "^8.15.1",
+    "pg": "^8.15.6",
     "proxy-chain": "^2.5.8",
     "puppeteer": "^24.7.1",
     "puppeteer-extra": "^3.3.6",
