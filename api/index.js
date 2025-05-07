@@ -50,7 +50,7 @@ io.on("connection", (socket) => {
 if (process.env.NODE_ENV === "production") {
     console.log = () => {};
     console.warn = () => {};
-    // console.info = () => {};
+    console.info = () => {};
     console.debug = () => {};
     // console.error; //remains active
 }

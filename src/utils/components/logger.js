@@ -23,10 +23,10 @@ const logger = winston.createLogger({
             ),
         }),
         new winston.transports.File({
-            filename: "logs/error.log",
+            filename: "logsDir/error.log",
             level: "error",
         }),
-        new winston.transports.File({ filename: "logs/combined.log" }),
+        new winston.transports.File({ filename: "logsDir/combined.log" }),
     ],
 });
 
