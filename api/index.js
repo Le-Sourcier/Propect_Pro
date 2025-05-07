@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const logger = require("./../src/utils/components/logger");
+// const logger = require("./../src/utils/components/logger");
 require("./../db"); //initialize db instance
 require("./../src/events/cleanupMapped"); //Auto clean up unsable files from mapped folder
 require("./../src/events/dbDownloader"); //Auto download database
