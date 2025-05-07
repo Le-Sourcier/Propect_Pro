@@ -1,10 +1,10 @@
-const { Google, Pappers } = require("./../../functions");
+const { Google, Pappers } = require("../../functions");
 const {
     scraping_jobs: Jobs,
     scraping_job_results: jobResults,
     Users,
 } = require("../../models");
-const db = require("./../../models");
+const db = require("../../models");
 const { serverMessage } = require("../../utils");
 const dayjs = require("dayjs");
 
