@@ -6,10 +6,10 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const logger = require("./src/utils/components/logger");
-require("./db"); //initialize db instance
-require("./src/events/cleanupMapped"); //Auto clean up unsable files from mapped folder
-require("./src/events/dbDownloader"); //Auto download database
+const logger = require("../src/utils/components/logger");
+require("../db"); //initialize db instance
+require("../src/events/cleanupMapped"); //Auto clean up unsable files from mapped folder
+require("../src/events/dbDownloader"); //Auto download database
 
 const app = express();
 const server = http.createServer(app);
@@ -37,7 +37,7 @@ app.use(
 
 // Routes HTTP
 app.get("/", (req, res) => res.json({ message: "API is healthy!" }));
-app.use("/api", require("./src/routers"));
+app.use("/api", require("../src/routers"));
 
 // Démarrer les sockets
 app.set("io", io);
