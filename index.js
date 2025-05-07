@@ -33,7 +33,7 @@ app.use(
         credentials: true,
     })
 );
-app.set("trust proxy", 1);
+// app.set("trust proxy", 1);
 
 // Routes HTTP
 app.get("/", (req, res) => res.json({ message: "API is healthy!" }));
