@@ -6,7 +6,7 @@ const LOG_LEVEL = process.env.LOG_LEVEL || "info";
 const logFormat = winston.format.printf(({ level, message, timestamp }) => {
     return `${timestamp} ${level}: ${message}`;
 });
-
+const dirName = process.env.NODE_ENV === "development" ? "logs" : "logsDir";
 // Create logger
 const logger = winston.createLogger({
     level: LOG_LEVEL,
@@ -23,10 +23,10 @@ const logger = winston.createLogger({
             ),
         }),
         new winston.transports.File({
-            filename: "logsDir/error.log",
+            filename: `${dirName}/error.log`,
             level: "error",
         }),
-        new winston.transports.File({ filename: "logsDir/combined.log" }),
+        new winston.transports.File({ filename: `${dirName}/combined.log` }),
     ],
 });
 

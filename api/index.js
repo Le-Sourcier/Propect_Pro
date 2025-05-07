@@ -6,7 +6,10 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const logger = require("./../src/utils/components/logger");
+let logger;
+if (process.env.NODE_ENV === "development") {
+    logger = require("./../src/utils/components/logger");
+}
 require("./../db"); //initialize db instance
 require("./../src/events/cleanupMapped"); //Auto clean up unsable files from mapped folder
 require("./../src/events/dbDownloader"); //Auto download database
@@ -59,13 +62,17 @@ if (process.env.NODE_ENV === "production") {
 const PORT = process.env.PORT;
 const NODE_ENV = process.env.NODE_ENV;
 server.listen(PORT, () => {
-    logger.info(`Server running in ${NODE_ENV} mode on port ${PORT}`);
-    // console.info(`Server running in ${NODE_ENV} mode on port ${PORT}`);
+    if (process.env.NODE_ENV === "development") {
+        logger.info(`Server running in ${NODE_ENV} mode on port ${PORT}`);
+    } else console.info(`Server running in ${NODE_ENV} mode on port ${PORT}`);
 });
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
-    logger.error(`Error: ${err.message}`);
+    if (process.env.NODE_ENV === "development")
+        logger.error(`Error: ${err.message}`);
+    else console.error(`Error: ${err.message}`);
+
     // Close server & exit process
     server.close(() => process.exit(1));
 });
