@@ -55,7 +55,7 @@ module.exports = (sequelize) => {
             },
             reset_code_expires_at: {
                 type: DataTypes.DATE,
-                allowNull: false,
+                allowNull: true,
             },
         },
         {

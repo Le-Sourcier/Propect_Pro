@@ -27,6 +27,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         // Erreurs liées à l'authentification et à l'autorisation
         case "UNAUTHORIZED_ACCESS":
         case "TOKEN_EXPIRED":
+        case "INVALID_OR_EXPIRED_CODE":
         case "TOKEN_INVALID":
         case "ACCOUNT_BLOKED":
         case "ENRICH_SOURCE_IS_EMPTY":
@@ -88,6 +89,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         case "ACCOUNT_REACTIVATED":
         case "DATA_FETCH_SUCCESS":
         case "FILE_UPLOAD_SUCCESS":
+        case "PASSWORD_RECOVERED_SUCCESS":
         case "FILE_DELETED":
         case "FILE_DOWNLOAD_SUCCESS":
         case "PASSWORD_CHANGED":
@@ -97,6 +99,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         case "JOB_UPDATED":
         case "JOB_DELETED":
         case "ENRICH_CREATED":
+        case "NEXT_STEP":
         case "RESET_CODE_SENT":
             status = 200; // OK (successful operation)
             break;

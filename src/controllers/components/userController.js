@@ -188,7 +188,9 @@ module.exports = {
     // controllers/auth.js
     refresh: async (req, res) => {
         try {
-            const token = req.cookies.refreshToken;
+            // const token = req.cookies.refreshToken;
+            const token = req.body.refreshToken;
+            console.log(token);
 
             if (!token) return serverMessage(res, "UNAUTHORIZED_ACCESS");
             // Vérifier et extraire userId
@@ -237,7 +239,7 @@ module.exports = {
         }
     },
     //   Reset password
-    resetPassword: async (req, res) => {
+    updatePassword: async (req, res) => {
         const transaction = await db.sequelize.transaction();
         try {
             const userId = req.params.id;
@@ -270,30 +272,6 @@ module.exports = {
             return serverMessage(res);
         }
     },
-    forgetPassword: async (req, res) => {
-        const transaction = await db.sequelize.transaction();
-        try {
-            const email = req.params.email;
-            const { password } = req.body;
-
-            const user = await Users.findOne({ where: { email } });
-            if (!user) {
-                return serverMessage(res, "PROFILE_NOT_FOUND");
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-            user.password = hashedPassword;
-
-            await user.save();
-            await transaction.commit();
-
-            return serverMessage(res, "PASSWORD_RECOVRED_SUCCESS");
-        } catch (error) {
-            await transaction.rollback();
-            console.error(error);
-            return serverMessage(res);
-        }
-    },
     sendResetCode: async (req, res) => {
         try {
             const { email } = req.body;
@@ -307,6 +285,7 @@ module.exports = {
             const expiresAt = dayjs().add(15, "minutes").toDate();
             user.reset_code = resetCode;
             user.reset_code_expires_at = expiresAt;
+            console.log("expiresAt: ", expiresAt);
             await user.save();
 
             const mailTemplate = resetPasswordTemplate(resetCode);
@@ -314,7 +293,7 @@ module.exports = {
             await sendMail({
                 to: "suport.darksite@gmail.com",
                 subject: "Votre code de réinitialisation",
-                text: `Votre code de réinitialisation de votre compte Prospect Pro est : ${reset_code}
+                text: `Votre code de réinitialisation de votre compte Prospect Pro est : ${resetCode}
 Ce code expirera après 15 minutes.
 Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer ce message.`,
                 html: mailTemplate,
@@ -323,6 +302,65 @@ Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignor
             return serverMessage(res, "RESET_CODE_SENT"); // ne pas inclure le code en prod
         } catch (err) {
             console.error(err);
+            return serverMessage(res);
+        }
+    },
+
+    verifyPasswordOTP: async (req, res) => {
+        const transaction = await db.sequelize.transaction();
+        try {
+            const { email, code } = req.body;
+            console.log("EMAIN & CODE: ", email, code);
+
+            if (!email || !code)
+                return serverMessage(res, "REQUIRED_FIELDS_MISSING");
+
+            const user = await Users.findOne({ where: { email } });
+            if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
+
+            const isCodeValid =
+                user.reset_code === code &&
+                user.reset_code_expires_at &&
+                new Date(user.reset_code_expires_at) > new Date();
+
+            if (!isCodeValid)
+                return serverMessage(res, "INVALID_OR_EXPIRED_CODE");
+
+            // Supprime le code pour éviter réutilisation
+            user.reset_code = null;
+            user.reset_code_expires_at = null;
+
+            await user.save();
+            await transaction.commit();
+
+            return serverMessage(res, "NEXT_STEP");
+        } catch (error) {
+            await transaction.rollback();
+            console.error(error);
+            return serverMessage(res);
+        }
+    },
+    resetPassword: async (req, res) => {
+        const transaction = await db.sequelize.transaction();
+        try {
+            const { email, password } = req.body;
+
+            if (!email || !password)
+                return serverMessage(res, "REQUIRED_FIELDS_MISSING");
+
+            const user = await Users.findOne({ where: { email } });
+            if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+            user.password = hashedPassword;
+
+            await user.save();
+            await transaction.commit();
+
+            return serverMessage(res, "PASSWORD_RECOVERED_SUCCESS");
+        } catch (error) {
+            await transaction.rollback();
+            console.error(error);
             return serverMessage(res);
         }
     },
