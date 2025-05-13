@@ -28,7 +28,7 @@ import PrivacySettings from "./pages/settings/PrivacySettings";
 // Auth
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import CookiesRule from "./pages/Cookies.store";
+import CookiesRule from "./pages/CookiesRule";
 
 const queryClient = new QueryClient();
 

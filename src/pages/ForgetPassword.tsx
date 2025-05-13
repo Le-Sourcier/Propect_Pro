@@ -75,15 +75,24 @@ const ForgetPassword = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="pb-4 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="h-12 w-12 bg-blue-900 text-white rounded-md flex items-center justify-center">
             <Database size={28} />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          ProspectPro
+        <h2 className="mt-6 text-center text-[28px] font-extrabold text-gray-900">
+          Reset Your ProspectPro Password
         </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Or{" "}
+          <Link
+            to="/login"
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
+            Back to Login
+          </Link>
+        </p>
       </div>
 
       {/* TITLE + FORM */}
@@ -118,7 +127,7 @@ const ForgetPassword = () => {
                 type="email"
                 name="email"
                 autoComplete="email"
-                placeholder="example@example.com"
+                placeholder="jhon@doe.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -212,16 +221,6 @@ const ForgetPassword = () => {
             </button>
           </form>
         )}
-
-        {/* ➕ Lien retour login */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <button
-            onClick={() => navigate("/login")}
-            className="text-blue-600 hover:underline"
-          >
-            Retour à la connexion
-          </button>
-        </div>
       </div>
     </div>
   );
