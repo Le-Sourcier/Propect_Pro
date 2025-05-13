@@ -17,7 +17,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { error } = await login(email, password);
+      const { error, data } = await login(email, password);
 
       if (error) {
         toast.error(`${error}` || "Failed to sign in");
@@ -25,7 +25,8 @@ const Login = () => {
         // logger.error("ETRR :  ", error);
         console.log("Error: ", error);
       } else {
-        toast.success("Signed in successfully!");
+        // toast.success("Signed in successfully!");
+        toast.success(`Hey👋 ${data?.lname}, Your welcome back!`);
         navigate("/");
       }
     } catch (error) {

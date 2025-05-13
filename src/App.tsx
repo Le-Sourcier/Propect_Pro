@@ -28,6 +28,7 @@ import PrivacySettings from "./pages/settings/PrivacySettings";
 // Auth
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import CookiesRule from "./pages/Cookies.store";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
+        <CookiesRule />
       </AuthProvider>
     </QueryClientProvider>
   );

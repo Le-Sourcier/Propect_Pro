@@ -27,7 +27,7 @@ export interface AuthContextType {
   login: (
     email: string,
     password: string
-  ) => Promise<{ error: Error | null; data: any }>;
+  ) => Promise<{ error: Error | null; data: User | null }>;
   sendPasswordOtp: (
     email: string
   ) => Promise<{ error: Error | null; data: any }>;

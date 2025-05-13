@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import useAuth from "../hooks/useAuth";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Database } from "lucide-react";
 
 const ForgetPassword = () => {
   const [step, setStep] = useState<"email" | "otp" | "reset">("email");
@@ -75,9 +75,15 @@ const ForgetPassword = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
-      {/* LOGO */}
-      <div className="mb-6">
-        <img src="/logo.svg" alt="Logo" className="h-12 mx-auto" />
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="h-12 w-12 bg-blue-900 text-white rounded-md flex items-center justify-center">
+            <Database size={28} />
+          </div>
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          ProspectPro
+        </h2>
       </div>
 
       {/* TITLE + FORM */}

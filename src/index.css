@@ -1,7 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+@plugin "flowbite/plugin";
+@source "../node_modules/flowbite";
 /* .input {
     @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm mb-3;
 }
