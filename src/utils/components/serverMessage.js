@@ -73,6 +73,7 @@ module.exports = serverMessage = (res, key, data = []) => {
             break;
 
         // Autres succès (2xx) - réponses générales pour actions réussies
+        case "SUCCESS":
         case "LOGIN_SUCCESS":
         case "LOGOUT_SUCCESS":
         case "USER_UPDATED":
@@ -83,6 +84,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         case "EMAIL_VERIFIED_SUCCESS":
         case "PASSWORD_RESET_REQUESTED":
         case "PASSWORD_RESET_SUCCESS":
+        case "PASSWORD_RECOVRED_SUCCESS":
         case "ACCOUNT_REACTIVATED":
         case "DATA_FETCH_SUCCESS":
         case "FILE_UPLOAD_SUCCESS":
@@ -95,6 +97,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         case "JOB_UPDATED":
         case "JOB_DELETED":
         case "ENRICH_CREATED":
+        case "RESET_CODE_SENT":
             status = 200; // OK (successful operation)
             break;
 

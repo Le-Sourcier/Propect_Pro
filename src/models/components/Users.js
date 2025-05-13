@@ -48,6 +48,15 @@ module.exports = (sequelize) => {
                 defaultValue: "USER",
                 allowNull: false,
             },
+            reset_code: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: null,
+            },
+            reset_code_expires_at: {
+                type: DataTypes.DATE,
+                allowNull: false,
+            },
         },
         {
             hooks: {

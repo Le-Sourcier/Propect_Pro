@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+
 let logger;
 if (process.env.NODE_ENV === "development") {
     logger = require("./src/utils/components/logger");
@@ -33,7 +34,7 @@ app.use(cookieParser());
 app.use(
     cors({
         origin: ORIGINE_URL,
-        credentials: false,
+        credentials: true,
     })
 );
 app.set("trust proxy", 1);
@@ -51,13 +52,12 @@ io.on("connection", (socket) => {
 
 // silence all console outputs on production
 if (process.env.NODE_ENV === "production") {
-    console.log = () => {};
+    // console.log = () => {};
     console.warn = () => {};
     console.info = () => {};
     console.debug = () => {};
     // console.error; //remains active
 }
-
 // Serveur
 const PORT = process.env.PORT;
 const NODE_ENV = process.env.NODE_ENV;

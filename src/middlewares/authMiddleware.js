@@ -8,6 +8,9 @@ const unprotectedRoutes = [
     "/api/user/login",
     "/api/user/register",
     "/api/user/refresh",
+    "/api/user/activities",
+    "/api/user/forget-password",
+    "/api/user/send-password-otp",
 ];
 const authorize = async (req, res, next) => {
     // if (unprotectedRoutes.includes(req.originalUrl)) {

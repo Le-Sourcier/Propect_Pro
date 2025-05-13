@@ -1,8 +1,19 @@
-const { Users, Profiles, Sessions } = require("../../models");
+const dayjs = require("dayjs");
+
+const {
+    Users,
+    Profiles,
+    Sessions,
+    enrich_jobs: EnrichJob,
+    scraping_jobs: ScrapingJobs,
+} = require("../../models");
+
 const { serverMessage } = require("../../utils");
 const db = require("../../models");
 
 const bcrypt = require("bcrypt");
+const sendMail = require("../../functions/components/sendMail");
+const resetPasswordTemplate = require("../../../lib/resetPasswordTemplate");
 
 module.exports = {
     // User registration
@@ -169,7 +180,7 @@ module.exports = {
                 phone: profile.phone,
             };
 
-            return res.json(data);
+            return serverMessage(res, "SUCCESS", data);
         } catch (error) {
             return serverMessage(res);
         }
@@ -179,22 +190,20 @@ module.exports = {
         try {
             const token = req.cookies.refreshToken;
 
-            if (!token) return res.status(401).json({ error: "No token" });
+            if (!token) return serverMessage(res, "UNAUTHORIZED_ACCESS");
             // Vérifier et extraire userId
             const payload = jwt.verify(token, process.env.REFRESH_SECRET);
             // Vérifier que le token existe en base et n’est pas expiré
             const session = await Sessions.findOne({ where: { token } });
             if (!session || session.expires_at < new Date()) {
-                return res
-                    .status(403)
-                    .json({ error: "Token expiré ou invalide" });
+                return serverMessage(res, "TOKEN_EXPIRED");
             }
             // Générer un nouvel accessToken
             const accessToken = generateAccessToken({ id: payload.id });
             // (Optionnel) rotation : générer aussi un nouveau refresh, mettre à jour la session et le cookie
-            return res.json({ accessToken });
+            return serverMessage(res, "SUCCES", { token: accessToken });
         } catch (err) {
-            return res.status(403).json({ error: "Invalid token" });
+            return serverMessage(res, "TOKEN_INVALID");
         }
     },
 
@@ -261,6 +270,62 @@ module.exports = {
             return serverMessage(res);
         }
     },
+    forgetPassword: async (req, res) => {
+        const transaction = await db.sequelize.transaction();
+        try {
+            const email = req.params.email;
+            const { password } = req.body;
+
+            const user = await Users.findOne({ where: { email } });
+            if (!user) {
+                return serverMessage(res, "PROFILE_NOT_FOUND");
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+            user.password = hashedPassword;
+
+            await user.save();
+            await transaction.commit();
+
+            return serverMessage(res, "PASSWORD_RECOVRED_SUCCESS");
+        } catch (error) {
+            await transaction.rollback();
+            console.error(error);
+            return serverMessage(res);
+        }
+    },
+    sendResetCode: async (req, res) => {
+        try {
+            const { email } = req.body;
+
+            const user = await Users.findOne({ where: { email } });
+            if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
+
+            const resetCode = Math.floor(
+                100000 + Math.random() * 900000
+            ).toString(); // 6-digit code
+            const expiresAt = dayjs().add(15, "minutes").toDate();
+            user.reset_code = resetCode;
+            user.reset_code_expires_at = expiresAt;
+            await user.save();
+
+            const mailTemplate = resetPasswordTemplate(resetCode);
+
+            await sendMail({
+                to: "suport.darksite@gmail.com",
+                subject: "Votre code de réinitialisation",
+                text: `Votre code de réinitialisation de votre compte Prospect Pro est : ${reset_code}
+Ce code expirera après 15 minutes.
+Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer ce message.`,
+                html: mailTemplate,
+            });
+
+            return serverMessage(res, "RESET_CODE_SENT"); // ne pas inclure le code en prod
+        } catch (err) {
+            console.error(err);
+            return serverMessage(res);
+        }
+    },
 
     // Delete user
     delete: async (req, res) => {
@@ -312,6 +377,57 @@ module.exports = {
             res.json(user);
         } catch (error) {
             res.status(500).json({ error: "Failed to get user" });
+        }
+    },
+
+    // controllers/activityController.js
+    getRecentActivities: async (req, res) => {
+        try {
+            const userId = req.body.id;
+            const [enriches, scrapings] = await Promise.all([
+                EnrichJob.findAll({
+                    where: { user_id: userId },
+                    attributes: ["id", "createdAt", "user_id", "name"],
+                    order: [["createdAt", "DESC"]],
+                    limit: 10,
+                }),
+                ScrapingJobs.findAll({
+                    where: { user_id: userId },
+                    attributes: [
+                        "id",
+                        "createdAt",
+                        "user_id",
+                        "query",
+                        "source",
+                    ],
+                    order: [["createdAt", "DESC"]],
+                    limit: 10,
+                }),
+            ]);
+
+            const enrichActivities = enriches.map((e) => ({
+                id: e.id,
+                type: "enrich_job",
+                label: e.name,
+                createdAt: dayjs(e.createdAt).format("ddd MMM YYYY HH:mm"),
+            }));
+
+            const scrapeActivities = scrapings.map((s) => ({
+                id: s.id,
+                type: "scraping_job",
+                label: `${s.query} - ${s.source}`,
+                createdAt: dayjs(s.createdAt).format("ddd MMM YYYY HH:mm"),
+            }));
+
+            const all = [...enrichActivities, ...scrapeActivities].sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            console.log("DATA: ", all);
+
+            return serverMessage(res, "SUCCESS", all.slice(0, 20)); // Limite finale
+        } catch (err) {
+            console.error(err);
+            return serverMessage(res);
         }
     },
 };
