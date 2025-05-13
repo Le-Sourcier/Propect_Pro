@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -15,23 +14,14 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import ScrapingModule from "./pages/ScrapingModule";
 import EnrichmentModule from "./pages/EnrichmentModule";
-// import EmailCampaigns from "./pages/EmailCampaigns";
-// import CampaignEditor from "./pages/email-campaigns/CampaignEditor";
-// import CampaignAnalytics from "./pages/email-campaigns/CampaignAnalytics";
-// import TemplateEditor from "./pages/email-campaigns/TemplateEditor";
-// import ContactList from "./pages/email-campaigns/ContactList";
-// import NewContactList from "./pages/email-campaigns/NewContactList";
 import Settings from "./pages/settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import ForgetPassword from "./pages/ForgetPassword";
 
 // Settings pages
 import AccountSettings from "./pages/settings/AccountSettings";
-import TeamSettings from "./pages/settings/TeamSettings";
-import ApiKeySettings from "./pages/settings/ApiKeySettings";
-import DatabaseSettings from "./pages/settings/DatabaseSettings";
-import EmailSettings from "./pages/settings/EmailSettings";
 import NotificationSettings from "./pages/settings/NotificationSettings";
 import PrivacySettings from "./pages/settings/PrivacySettings";
 
@@ -51,6 +41,7 @@ function App() {
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forget-password" element={<ForgetPassword />} />
 
             {/* Protected routes */}
             <Route
@@ -105,10 +96,6 @@ function App() {
               <Route path="settings" element={<Settings />}>
                 <Route index element={<Navigate to="account" replace />} />
                 <Route path="account" element={<AccountSettings />} />
-                <Route path="team" element={<TeamSettings />} />
-                <Route path="api" element={<ApiKeySettings />} />
-                <Route path="database" element={<DatabaseSettings />} />
-                <Route path="email" element={<EmailSettings />} />
                 <Route
                   path="notifications"
                   element={<NotificationSettings />}

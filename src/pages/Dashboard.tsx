@@ -3,13 +3,13 @@ import {
   Search,
   Mail,
   TrendingUp,
-  Clock,
   ArrowRight,
   Download,
   Filter,
 } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import { Link } from "react-router-dom";
+import RecentActivities from "../components/utils/recentActivities";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -47,40 +47,6 @@ const Dashboard = () => {
       change: "-2.1%",
       trend: "down",
       link: "/email-campaigns",
-    },
-  ];
-
-  // Recent activities (would normally come from API)
-  const recentActivities = [
-    {
-      id: 1,
-      activity: 'Scraping job completed: "Restaurants in Paris"',
-      time: "5 minutes ago",
-      link: "/scraping",
-    },
-    {
-      id: 2,
-      activity: "Data enrichment finished for 156 records",
-      time: "1 hour ago",
-      link: "/enrichment",
-    },
-    {
-      id: 3,
-      activity: 'Email campaign "Q2 Sales Outreach" sent to 354 contacts',
-      time: "3 hours ago",
-      link: "/email-campaigns",
-    },
-    {
-      id: 4,
-      activity: "New proxy server added: 192.168.1.152",
-      time: "1 day ago",
-      link: "/settings",
-    },
-    {
-      id: 5,
-      activity: 'User "john@example.com" added as team member',
-      time: "2 days ago",
-      link: "/settings",
     },
   ];
 
@@ -143,7 +109,7 @@ const Dashboard = () => {
               <div className="mt-1 flex items-center gap-2">
                 <div className="w-36 h-2.5 bg-blue-200 rounded-full overflow-hidden">
                   <div
-                    className="bg-blue-600 h-full rounded-full"
+                    className="bg-blue-600 h-full rounded-full transition-all duration-500 "
                     style={{ width: "65%" }}
                   ></div>
                 </div>
@@ -269,7 +235,8 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white shadow rounded-lg">
+        <RecentActivities />
+        {/* <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
             <div>
               <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -306,7 +273,7 @@ const Dashboard = () => {
               View all activity →
             </Link>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+
 import { useState, useEffect } from "react";
 import { Save, Trash2 } from "lucide-react";
 
@@ -17,11 +19,13 @@ function MappingProfiles({ mapping, setMapping }: MappingProfilesProps) {
   const [savedProfiles, setSavedProfiles] = useState<MappingProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<string>("");
   const [profileName, setProfileName] = useState("");
-  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(
+    null
+  );
 
   // Load profiles from local storage on mount
   useEffect(() => {
-    const storedProfiles = localStorage.getItem("csvMappingProfiles");
+    const storedProfiles = Cookies.get("csvMappingProfiles");
     if (storedProfiles) {
       try {
         setSavedProfiles(JSON.parse(storedProfiles));
@@ -44,9 +48,12 @@ function MappingProfiles({ mapping, setMapping }: MappingProfilesProps) {
 
     const updatedProfiles = [...savedProfiles, newProfile];
     setSavedProfiles(updatedProfiles);
-    localStorage.setItem("csvMappingProfiles", JSON.stringify(updatedProfiles));
+    Cookies.set("csvMappingProfiles", JSON.stringify(updatedProfiles), {
+      secure: true,
+      sameSite: "strict",
+    });
     setProfileName("");
-    
+
     // Auto-select newly created profile
     setSelectedProfile(newProfile.id);
   };
@@ -63,31 +70,37 @@ function MappingProfiles({ mapping, setMapping }: MappingProfilesProps) {
   const deleteProfile = (profileId: string) => {
     const updatedProfiles = savedProfiles.filter((p) => p.id !== profileId);
     setSavedProfiles(updatedProfiles);
-    localStorage.setItem("csvMappingProfiles", JSON.stringify(updatedProfiles));
-    
+    Cookies.set("csvMappingProfiles", JSON.stringify(updatedProfiles), {
+      secure: true,
+      sameSite: "strict",
+    });
+
     if (selectedProfile === profileId) {
       setSelectedProfile("");
     }
-    
+
     setShowConfirmDelete(null);
   };
 
   // Update profile with current mapping
   const updateProfile = (profileId: string) => {
-    const updatedProfiles = savedProfiles.map(profile => 
-      profile.id === profileId 
+    const updatedProfiles = savedProfiles.map((profile) =>
+      profile.id === profileId
         ? { ...profile, mapping, createdAt: new Date().toISOString() }
         : profile
     );
-    
+
     setSavedProfiles(updatedProfiles);
-    localStorage.setItem("csvMappingProfiles", JSON.stringify(updatedProfiles));
+    Cookies.set("csvMappingProfiles", JSON.stringify(updatedProfiles), {
+      secure: true,
+      sameSite: "strict",
+    });
   };
 
   return (
     <div className="p-4 border-b border-gray-200 bg-gray-50">
       <h3 className="font-medium mb-3">Mapping Profiles</h3>
-      
+
       <div className="flex flex-col md:flex-row md:items-end gap-4">
         {/* Load Profile */}
         <div className="flex-1">
@@ -112,7 +125,7 @@ function MappingProfiles({ mapping, setMapping }: MappingProfilesProps) {
                 </option>
               ))}
             </select>
-            
+
             {selectedProfile && (
               <div className="flex">
                 <button
@@ -132,11 +145,13 @@ function MappingProfiles({ mapping, setMapping }: MappingProfilesProps) {
               </div>
             )}
           </div>
-          
+
           {/* Delete Confirmation */}
           {showConfirmDelete && (
             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-700 mb-1">Are you sure you want to delete this profile?</p>
+              <p className="text-sm text-red-700 mb-1">
+                Are you sure you want to delete this profile?
+              </p>
               <div className="flex justify-end gap-2">
                 <button
                   className="px-2 py-1 text-xs bg-gray-100 rounded-md hover:bg-gray-200"
@@ -179,11 +194,15 @@ function MappingProfiles({ mapping, setMapping }: MappingProfilesProps) {
           </div>
         </div>
       </div>
-      
+
       {selectedProfile && (
         <div className="mt-2">
           <p className="text-xs text-gray-500">
-            Last updated: {new Date(savedProfiles.find(p => p.id === selectedProfile)?.createdAt || "").toLocaleString()}
+            Last updated:{" "}
+            {new Date(
+              savedProfiles.find((p) => p.id === selectedProfile)?.createdAt ||
+                ""
+            ).toLocaleString()}
           </p>
         </div>
       )}

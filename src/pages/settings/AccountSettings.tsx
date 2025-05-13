@@ -1,17 +1,22 @@
-import React from 'react';
-import { Save, User } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Save, User } from "lucide-react";
+import toast from "react-hot-toast";
+import useAuth from "../../hooks/useAuth";
 
 const AccountSettings = () => {
+  const { user } = useAuth();
   const handleSaveChanges = () => {
-    toast.success('Account settings saved successfully');
+    toast.success("Account settings saved successfully");
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={user?.id}>
       <div>
-        <h3 className="text-lg font-medium text-gray-900">Account Information</h3>
-        <p className="mt-1 text-sm text-gray-500">Update your account settings and profile information.</p>
+        <h3 className="text-lg font-medium text-gray-900">
+          Account Information
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Update your account settings and profile information.
+        </p>
       </div>
 
       <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
@@ -20,7 +25,9 @@ const AccountSettings = () => {
             <User size={24} />
           </div>
           <div>
-            <h4 className="text-sm font-medium text-gray-900">Profile Picture</h4>
+            <h4 className="text-sm font-medium text-gray-900">
+              Profile Picture
+            </h4>
             <div className="mt-2 flex space-x-2">
               <button className="text-xs text-blue-600 hover:text-blue-800">
                 Upload new image
@@ -36,43 +43,55 @@ const AccountSettings = () => {
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="first-name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="first-name"
+              className="block text-sm font-medium text-gray-700"
+            >
               First Name
             </label>
             <input
               type="text"
               id="first-name"
-              defaultValue="John"
+              defaultValue={user?.fname}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
           <div>
-            <label htmlFor="last-name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="last-name"
+              className="block text-sm font-medium text-gray-700"
+            >
               Last Name
             </label>
             <input
               type="text"
               id="last-name"
-              defaultValue="Doe"
+              defaultValue={user?.lname}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
             Email Address
           </label>
           <input
             type="email"
             id="email"
-            defaultValue="john@example.com"
+            defaultValue={user?.email}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
         </div>
 
-        <div>
-          <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+        {/* <div>
+          <label
+            htmlFor="company"
+            className="block text-sm font-medium text-gray-700"
+          >
             Company
           </label>
           <input
@@ -81,13 +100,16 @@ const AccountSettings = () => {
             defaultValue="Acme Inc."
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
-        </div>
+        </div> */}
       </div>
 
       <div className="space-y-4">
         <h4 className="text-sm font-medium text-gray-900">Change Password</h4>
         <div>
-          <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="current-password"
+            className="block text-sm font-medium text-gray-700"
+          >
             Current Password
           </label>
           <input
@@ -98,7 +120,10 @@ const AccountSettings = () => {
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="new-password"
+              className="block text-sm font-medium text-gray-700"
+            >
               New Password
             </label>
             <input
@@ -108,7 +133,10 @@ const AccountSettings = () => {
             />
           </div>
           <div>
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Confirm New Password
             </label>
             <input

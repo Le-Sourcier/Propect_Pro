@@ -6,6 +6,12 @@
 //   link: string;
 // }
 
+export interface Activities {
+  id: string;
+  type: string;
+  label: string;
+  createdAt: string;
+}
 export interface EnrichmentJobsProps {
   id: string;
   name: string;
@@ -29,7 +35,7 @@ export interface ScrapingJob {
 }
 export interface SelectedScrapingJob {
   id: string;
-  result: SelectedScrapingJobResult[] | [];
+  result: SelectedScrapingJobResult[];
   createdAt: string;
 }
 

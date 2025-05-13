@@ -1,7 +1,8 @@
+import Cookies from "js-cookie";
 const API_URL = import.meta.env.VITE_API_URL;
 
 async function getAuthHeaders() {
-  const token = localStorage.getItem("auth_token");
+  const token = Cookies.get("auth_token");
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
