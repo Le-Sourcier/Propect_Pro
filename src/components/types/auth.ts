@@ -28,16 +28,16 @@ export interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ error: Error | null; data: User | null }>;
-  sendPasswordOtp: (
-    email: string
+  resetPassword: (
+    token: string,
+    password: string,
+    confirmpassword: string
   ) => Promise<{ error: Error | null; data: any }>;
-  verifyPasswordOTP: (
-    email: string,
-    otp: string
-  ) => Promise<{ error: Error | null; data: any }>;
+  verifyPasswordToken: (
+    token: string
+  ) => Promise<{ error: Error | null; data: { firstName: string | null } }>;
   passwordForgetting: (
-    email: string,
-    password: string
+    email: string
   ) => Promise<{ error: Error | null; data: any }>;
   signUp: (data: RegisterProps) => Promise<{ error: Error | null; data: any }>;
   getAllActivities: () => Promise<Activities[] | []>;

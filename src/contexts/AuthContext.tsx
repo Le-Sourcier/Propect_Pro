@@ -116,19 +116,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
     }
   };
-  const sendPasswordOtp = async (
-    email: string
-  ): Promise<{ error: Error | null; data: any }> => {
+
+  const resetPassword = async (
+    token: string,
+    password: string,
+    confirmpassword: string
+  ) => {
     setLoading(true);
     try {
-      const res = await axios.post<ApiResponse<null>>(
-        `${BASE_URL}/send-password-otp`,
+      if (password !== confirmpassword) {
+        toast.error("Password and Confirm Password do not match");
+        return {
+          error: new Error("Password and Confirm Password do not match"),
+          data: null,
+        };
+      }
+      const res = await axios.put<ApiResponse<null>>(
+        `${BASE_URL}/reset-password`,
         {
-          email,
+          token,
+          password,
         }
       );
       const { error, message } = res.data;
-
       if (error) {
         toast.error(message);
         return { error: new Error(message), data: null };
@@ -136,48 +146,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return { error: null, data: null };
     } catch (e) {
       let message;
-      if (axios.isAxiosError(e)) {
-        message = e.response?.data?.message;
-      }
-      toast.error(message || "OTP for password sending failed");
-
+      if (axios.isAxiosError(e)) message = e.response?.data?.message;
+      toast.error(message || "Password reset failed");
       return {
-        error: new Error(message || "Password OTP sending failed"),
+        error: new Error(message || "Password reset failed"),
         data: null,
       };
     } finally {
       setLoading(false);
     }
   };
-  const verifyPasswordOTP = async (
-    email: string,
-    otp: string
+  const verifyPasswordToken = async (
+    token: string
   ): Promise<{ error: Error | null; data: any }> => {
     setLoading(true);
     try {
-      const res = await axios.post<ApiResponse<null>>(
-        `${BASE_URL}/verify-otp`,
-        {
-          email: email,
-          code: otp,
-        }
+      const res = await axios.post<ApiResponse<any>>(
+        `${BASE_URL}/verify-token`,
+        { token }
       );
-      const { error, message } = res.data;
+      const { error, message, data } = res.data;
 
       if (error) {
         toast.error(message);
         return { error: new Error(message), data: null };
       }
-      return { error: null, data: null };
+      return { error: null, data: data };
     } catch (e) {
       let message;
       if (axios.isAxiosError(e)) {
         message = e.response?.data?.message;
       }
-      toast.error(message || "Code verification failed");
+      toast.error(message || "Token verification failed");
 
       return {
-        error: new Error(message || "Code verification failed"),
+        error: new Error(message || "Token verification failed"),
         data: null,
       };
     } finally {
@@ -185,8 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
   const passwordForgetting = async (
-    email: string,
-    password: string
+    email: string
   ): Promise<{ error: Error | null; data: any }> => {
     setLoading(true);
     try {
@@ -194,7 +196,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         `${BASE_URL}/forget-password`,
         {
           email,
-          password,
         }
       );
       const { error, message } = res.data;
@@ -320,8 +321,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         accessToken,
         login,
-        sendPasswordOtp,
-        verifyPasswordOTP,
+        resetPassword,
+        verifyPasswordToken,
         passwordForgetting,
         signUp,
         getAllActivities,
