@@ -266,13 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const res = await axios.post<ApiResponse<Activities[]>>(
         `${BASE_URL}/activities`,
-        {
-          method: "POST",
-          body: JSON.stringify({ id }),
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+        id
       );
       const { error, data, message } = res.data;
       if (error) {
@@ -287,8 +281,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
   const refreshAccessToken = async () => {
     try {
+      if (refreshToken)
+        return { error: new Error("No refresh token"), data: null };
       const res = await axios.post<ApiResponse<{ token: string }>>(
-        `${BASE_URL}/refresh/${refreshToken}`
+        `${BASE_URL}/refresh`,
+        { refreshToken: refreshToken }
       );
 
       const { error, data, message } = res.data;
