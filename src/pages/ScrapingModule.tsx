@@ -28,6 +28,7 @@ const ScrapingModule = () => {
   const [results, setResults] = useState(50);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedSource, setSelectedSource] = useState("google-maps");
+  const [enabledSource, setEnabledSource] = useState(false);
   const [proxyServers, setProxyServers] = useState([
     {
       id: 1,
@@ -105,22 +106,26 @@ const ScrapingModule = () => {
       id: "google-maps",
       name: "Google Maps",
       description: "Local businesses and places",
+      enabled: true,
     },
     {
       id: "linkedin",
       name: "LinkedIn",
       description: "Company profiles and employees",
+      enabled: false,
     },
     {
       id: "pappers",
       // name: "Yellow Pages",
       name: "Pappers",
       description: "Business directories",
+      enabled: true,
     },
     {
       id: "societe-com",
       name: "Societe.com",
       description: "French company information",
+      enabled: false,
     },
   ];
 
@@ -140,6 +145,7 @@ const ScrapingModule = () => {
         location,
         status: "pending",
         results: 0,
+        limite: results === 0 ? null : results,
         createdAt: new Date().toISOString(),
       });
 
@@ -274,10 +280,15 @@ const ScrapingModule = () => {
                       key={source.id}
                       className={`cursor-pointer rounded-lg border p-4 ${
                         selectedSource === source.id
-                          ? "border-blue-500 bg-blue-50"
+                          ? source.enabled
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-red-500 bg-blue-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
-                      onClick={() => setSelectedSource(source.id)}
+                      onClick={() => {
+                        setSelectedSource(source.id);
+                        setEnabledSource(source.enabled);
+                      }}
                     >
                       <h3 className="font-medium text-gray-900">
                         {source.name}
@@ -303,8 +314,9 @@ const ScrapingModule = () => {
                     id="query"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    disabled={!enabledSource}
                     placeholder="e.g., Restaurants, Plumbers, Hotels"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="p-1 mt-1 block w-full rounded-md dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Enter the type of businesses you want to scrape
@@ -320,11 +332,11 @@ const ScrapingModule = () => {
                   <input
                     type="text"
                     id="location"
-                    disabled={selectedSource === "pappers"}
+                    disabled={selectedSource === "pappers" || !enabledSource}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g., Paris, Lyon, Marseille"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="p-1 mt-1 block w-full rounded-md dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Enter the location you want to target
@@ -349,7 +361,7 @@ const ScrapingModule = () => {
                   type="range"
                   id="results"
                   min="0"
-                  max="500"
+                  max="400"
                   step="10"
                   value={results}
                   onChange={(e) => setResults(Number(e.target.value))}
@@ -360,9 +372,9 @@ const ScrapingModule = () => {
                 <div className="mt-1 flex justify-between text-xs text-gray-500">
                   {[
                     { label: "auto", value: 0 },
-                    { label: "170", value: 10 },
-                    { label: "330", value: 250 },
-                    { label: "500", value: 500 },
+                    { label: "130", value: 10 },
+                    { label: "270", value: 250 },
+                    { label: "400", value: 400 },
                   ].map(({ label, value }) => (
                     <span
                       key={value}
@@ -430,7 +442,7 @@ const ScrapingModule = () => {
                                   url: e.target.value,
                                 })
                               }
-                              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                              className="rounded-md border-gray-300 p-1 dark:bg-gray-200 bg-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             />
                             <input
                               type="text"
@@ -442,7 +454,7 @@ const ScrapingModule = () => {
                                   username: e.target.value,
                                 })
                               }
-                              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                              className="rounded-md border-gray-300 p-1 dark:bg-gray-200 bg-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             />
                             <input
                               type="password"
@@ -454,7 +466,7 @@ const ScrapingModule = () => {
                                   password: e.target.value,
                                 })
                               }
-                              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                              className="rounded-md border-gray-300 p-1 dark:bg-gray-200 bg-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             />
                           </div>
                           <button
@@ -486,7 +498,7 @@ const ScrapingModule = () => {
                         defaultValue={2}
                         min={1}
                         max={10}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md p-1 dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
 

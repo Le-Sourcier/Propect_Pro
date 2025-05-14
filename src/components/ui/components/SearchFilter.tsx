@@ -1,15 +1,12 @@
 import React from "react";
-import { Filter, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface SearchFilterProps {
   onSearch: (term: string) => void;
   onFilterClick: () => void;
 }
 
-const SearchFilter: React.FC<SearchFilterProps> = ({
-  onSearch,
-  onFilterClick,
-}) => {
+const SearchFilter: React.FC<SearchFilterProps> = ({ onSearch }) => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onSearch(e.target.value);
   };
@@ -27,13 +24,6 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
           <Search className="h-4 w-4 text-gray-400" />
         </div>
       </div>
-      <button
-        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-        onClick={onFilterClick}
-      >
-        <Filter className="h-4 w-4 mr-2" />
-        Filter
-      </button>
     </div>
   );
 };

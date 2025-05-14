@@ -30,6 +30,7 @@ export interface ScrapingJob {
   location: string;
   status: "pending" | "running" | "completed" | "failed";
   results: number;
+  limite: number | null;
   createdAt: string;
   user_id: string;
 }

@@ -149,7 +149,7 @@ const CookiesRule = () => {
     <div
       className={`${
         isTriggered && !isClosing
-          ? "translate-y-0 opacity-100 scale-100"
+          ? " z-50 translate-y-0 opacity-100 scale-100"
           : "translate-y-full opacity-0 scale-90"
       } transition-all duration-1000 ease-in-out z-30 fixed max-[540px]:left-0 max-[540px]:mx-3 inset-auto h-max max-[540px]:right-0 bottom-4 left-4 max-w-[400px] border border-gray-300 dark:border-gray-600 rounded-2xl dark:bg-[#1f2937] bg-white p-4 text-sm`}
     >

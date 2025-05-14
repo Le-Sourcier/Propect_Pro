@@ -38,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                   <User size={16} />
                 </div>
                 <span className="hidden md:block ml-2 mr-2">
-                  {user?.email?.split("@")[0] || "User"}
+                  {user?.fname || user?.email?.split("@")[0] || "User"}
                 </span>
               </button>
             </div>

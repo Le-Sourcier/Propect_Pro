@@ -53,7 +53,7 @@ const AccountSettings = () => {
               type="text"
               id="first-name"
               defaultValue={user?.fname}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full p-1 dark:bg-gray-200 bg-gray-400 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
           <div>
@@ -67,7 +67,7 @@ const AccountSettings = () => {
               type="text"
               id="last-name"
               defaultValue={user?.lname}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md p-1 dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
         </div>
@@ -83,24 +83,9 @@ const AccountSettings = () => {
             type="email"
             id="email"
             defaultValue={user?.email}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md p-1 dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
         </div>
-
-        {/* <div>
-          <label
-            htmlFor="company"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Company
-          </label>
-          <input
-            type="text"
-            id="company"
-            defaultValue="Acme Inc."
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div> */}
       </div>
 
       <div className="space-y-4">
@@ -115,7 +100,7 @@ const AccountSettings = () => {
           <input
             type="password"
             id="current-password"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md p-1 dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -129,7 +114,7 @@ const AccountSettings = () => {
             <input
               type="password"
               id="new-password"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md p-1 dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
           <div>
@@ -142,7 +127,7 @@ const AccountSettings = () => {
             <input
               type="password"
               id="confirm-password"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md p-1 dark:bg-gray-200 bg-gray-400 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
         </div>

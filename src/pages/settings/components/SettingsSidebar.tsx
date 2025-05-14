@@ -1,10 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { User, Bell, Shield } from "lucide-react";
+import { User, Bell } from "lucide-react";
 
 const menuItems = [
   { path: "account", label: "Account", icon: User },
   { path: "notifications", label: "Notifications", icon: Bell },
-  { path: "privacy", label: "Privacy & Security", icon: Shield },
 ];
 
 const SettingsSidebar = () => {

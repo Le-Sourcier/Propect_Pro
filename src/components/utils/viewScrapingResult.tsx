@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useFilterSearch } from "../../hooks/useFilterSearch";
 import { useScrapingStore } from "../../stores/scrapingStore";
@@ -7,7 +7,7 @@ import ExportButtons from "../ui/components/ExportButtons";
 
 function ViewScrapingResult() {
   const [searchParams] = useSearchParams();
-  const jobId = searchParams.get("jobId") || "demo";
+  const jobId = searchParams.get("jobId");
 
   const {
     fetchJobById,
@@ -21,6 +21,19 @@ function ViewScrapingResult() {
     job?.result
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const resultsPerPage = 25;
+
+  const paginatedData = useMemo(() => {
+    const allData = filteredData || job?.result || [];
+    const start = (currentPage - 1) * resultsPerPage;
+    const end = start + resultsPerPage;
+    return allData.slice(start, end);
+  }, [filteredData, job, currentPage]);
+
+  const totalResults = filteredData?.length || job?.result?.length || 0;
+  const totalPages = Math.ceil(totalResults / resultsPerPage);
+
   React.useEffect(() => {
     if (jobId) {
       fetchJobById(jobId);
@@ -32,6 +45,32 @@ function ViewScrapingResult() {
       resetSelectedJob();
     };
   }, [jobId, fetchJobById, resetSelectedJob]);
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center mt-4 space-x-2">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+          disabled={currentPage === 1}
+        >
+          Précédent
+        </button>
+        <span className="px-4 py-1 text-sm text-gray-600">
+          Page {currentPage} sur {totalPages}
+        </span>
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+          className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+          disabled={currentPage === totalPages}
+        >
+          Suivant
+        </button>
+      </div>
+    );
+  };
 
   const renderContent = () => {
     if (!jobId) {
@@ -53,19 +92,29 @@ function ViewScrapingResult() {
       return <EmptyState message="No matching results found" />;
     }
 
-    return <ResultsTable data={filteredData || job.result} />;
+    return (
+      <>
+        <ResultsTable data={paginatedData} />
+        {renderPagination()}
+      </>
+    );
   };
 
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <SearchFilter onSearch={handleSearch} onFilterClick={toggleFilter} />
           {job?.result && job.result.length > 0 && (
-            <ExportButtons
-              data={filteredData || job.result}
-              fileName={`scraping-results-${jobId}`}
-            />
+            <>
+              <SearchFilter
+                onSearch={handleSearch}
+                onFilterClick={toggleFilter}
+              />
+              <ExportButtons
+                data={filteredData || job.result}
+                fileName={`scraping-results-${jobId}`}
+              />
+            </>
           )}
         </div>
         <div className="min-h-[16rem] overflow-hidden border border-gray-200 rounded-lg">
@@ -79,15 +128,15 @@ function ViewScrapingResult() {
 export default ViewScrapingResult;
 
 // import React from "react";
-// import { useSearchParams, Navigate } from "react-router-dom";
+// import { useSearchParams } from "react-router-dom";
 // import { useFilterSearch } from "../../hooks/useFilterSearch";
 // import { useScrapingStore } from "../../stores/scrapingStore";
 // import { EmptyState, LoadingState, ResultsTable, SearchFilter } from "../ui";
+// import ExportButtons from "../ui/components/ExportButtons";
 
 // function ViewScrapingResult() {
 //   const [searchParams] = useSearchParams();
 //   const jobId = searchParams.get("jobId");
-//   const [notFound, setNotFound] = React.useState(false);
 
 //   const {
 //     fetchJobById,
@@ -103,31 +152,20 @@ export default ViewScrapingResult;
 
 //   React.useEffect(() => {
 //     if (jobId) {
-//       fetchJobById(jobId).catch((err) => {
-//         if (err.response?.status === 404) {
-//           setNotFound(true);
-//         }
-//       });
+//       fetchJobById(jobId);
 //     } else {
 //       resetSelectedJob();
 //     }
 
 //     return () => {
 //       resetSelectedJob();
-//       setNotFound(false);
 //     };
 //   }, [jobId, fetchJobById, resetSelectedJob]);
 
-//   if (notFound) {
-//     return <Navigate to="/404" replace />;
-//   }
-
-//   // Render content based on loading state and data
 //   const renderContent = () => {
 //     if (!jobId) {
 //       return <EmptyState message="Please select a job to view results" />;
 //     }
-
 //     if (isLoading) {
 //       return <LoadingState />;
 //     }
@@ -137,7 +175,7 @@ export default ViewScrapingResult;
 //     }
 
 //     if (!job || !job.result || job.result.length === 0) {
-//       return <EmptyState message="No results found for this job" />;
+//       return <EmptyState message="No job data found" />;
 //     }
 
 //     if (filteredData && filteredData.length === 0) {
@@ -150,10 +188,20 @@ export default ViewScrapingResult;
 //   return (
 //     <div className="bg-white rounded-lg shadow">
 //       <div className="p-6">
-//         {jobId && (
-//           <SearchFilter onSearch={handleSearch} onFilterClick={toggleFilter} />
-//         )}
-
+//         <div className="flex justify-between items-center mb-6">
+//           {job?.result && job.result.length > 0 && (
+//             <>
+//               <SearchFilter
+//                 onSearch={handleSearch}
+//                 onFilterClick={toggleFilter}
+//               />
+//               <ExportButtons
+//                 data={filteredData || job.result}
+//                 fileName={`scraping-results-${jobId}`}
+//               />
+//             </>
+//           )}
+//         </div>
 //         <div className="min-h-[16rem] overflow-hidden border border-gray-200 rounded-lg">
 //           {renderContent()}
 //         </div>
