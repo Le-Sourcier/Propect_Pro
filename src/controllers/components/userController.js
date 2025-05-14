@@ -14,6 +14,7 @@ const db = require("../../models");
 const bcrypt = require("bcrypt");
 const sendMail = require("../../functions/components/sendMail");
 const resetPasswordTemplate = require("../../../lib/resetPasswordTemplate");
+const { where } = require("sequelize");
 
 module.exports = {
     // User registration
@@ -21,7 +22,16 @@ module.exports = {
         const transaction = await db.sequelize.transaction();
 
         try {
-            const { email, password, fname, lname, phone } = req.body;
+            const {
+                email,
+                password,
+                fname,
+                lname,
+                phone,
+                address,
+                city,
+                postal_code,
+            } = req.body;
 
             const existingUser = await Users.findOne({ where: { email } });
             if (existingUser) {
@@ -39,6 +49,9 @@ module.exports = {
                 fname,
                 lname,
                 phone,
+                address,
+                city,
+                postal_code,
             });
 
             const userPlain = user.get({ plain: true });
@@ -60,6 +73,8 @@ module.exports = {
                 dateOfBirth: profilePlain.dob,
                 address: profilePlain.address,
                 phone: profilePlain.phone,
+                city: profilePlain.city,
+                postal_code: profilePlain.postal_code,
                 role: userPlain.role,
                 bio: profilePlain.bio,
                 image: profilePlain.image,
@@ -151,6 +166,8 @@ module.exports = {
                 dateOfBirth: profilePlain.dob,
                 address: profilePlain.address,
                 phone: profilePlain.phone,
+                city: profilePlain.city,
+                postal_code: profilePlain.postal_code,
                 role: userPlain.role,
                 bio: profilePlain.bio,
                 image: profilePlain.image,
@@ -189,7 +206,7 @@ module.exports = {
     refresh: async (req, res) => {
         try {
             // const token = req.cookies.refreshToken;
-            const token = req.body.refreshToken;
+            const token = req.query.refreshToken;
             console.log(token);
 
             if (!token) return serverMessage(res, "UNAUTHORIZED_ACCESS");
@@ -272,68 +289,33 @@ module.exports = {
             return serverMessage(res);
         }
     },
-    sendResetCode: async (req, res) => {
-        try {
-            const { email } = req.body;
 
-            const user = await Users.findOne({ where: { email } });
-            if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
-
-            const resetCode = Math.floor(
-                100000 + Math.random() * 900000
-            ).toString(); // 6-digit code
-            const expiresAt = dayjs().add(15, "minutes").toDate();
-            user.reset_code = resetCode;
-            user.reset_code_expires_at = expiresAt;
-            console.log("expiresAt: ", expiresAt);
-            await user.save();
-
-            const mailTemplate = resetPasswordTemplate(resetCode);
-
-            await sendMail({
-                to: "suport.darksite@gmail.com",
-                subject: "Votre code de réinitialisation",
-                text: `Votre code de réinitialisation de votre compte Prospect Pro est : ${resetCode}
-Ce code expirera après 15 minutes.
-Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer ce message.`,
-                html: mailTemplate,
-            });
-
-            return serverMessage(res, "RESET_CODE_SENT"); // ne pas inclure le code en prod
-        } catch (err) {
-            console.error(err);
-            return serverMessage(res);
-        }
-    },
-
-    verifyPasswordOTP: async (req, res) => {
+    verifyPasswordToken: async (req, res) => {
         const transaction = await db.sequelize.transaction();
+
         try {
-            const { email, code } = req.body;
-            console.log("EMAIN & CODE: ", email, code);
+            const { token } = req.body;
+            console.log(token);
 
-            if (!email || !code)
-                return serverMessage(res, "REQUIRED_FIELDS_MISSING");
-
-            const user = await Users.findOne({ where: { email } });
+            const user = await Users.findOne({ where: { reset_token: token } });
             if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
 
-            const isCodeValid =
-                user.reset_code === code &&
-                user.reset_code_expires_at &&
-                new Date(user.reset_code_expires_at) > new Date();
+            const isTokenValid =
+                user.reset_token === token &&
+                user.reset_token_expires_at &&
+                new Date(user.reset_token_expires_at) > new Date();
 
-            if (!isCodeValid)
-                return serverMessage(res, "INVALID_OR_EXPIRED_CODE");
+            if (!isTokenValid)
+                return serverMessage(res, "INVALID_OR_EXPIRED_TOKEN");
 
-            // Supprime le code pour éviter réutilisation
-            user.reset_code = null;
-            user.reset_code_expires_at = null;
-
-            await user.save();
             await transaction.commit();
 
-            return serverMessage(res, "NEXT_STEP");
+            const p = await Profiles.findOne({ where: { user_id: user.id } });
+
+            const data = {
+                firstName: p.fname,
+            };
+            return serverMessage(res, "NEXT_STEP", data);
         } catch (error) {
             await transaction.rollback();
             console.error(error);
@@ -343,14 +325,26 @@ Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignor
     resetPassword: async (req, res) => {
         const transaction = await db.sequelize.transaction();
         try {
-            const { email, password } = req.body;
+            const { password, token } = req.body;
 
-            if (!email || !password)
-                return serverMessage(res, "REQUIRED_FIELDS_MISSING");
+            if (!token) return serverMessage(res, "UNAUTHORIZED_ACCESS");
 
-            const user = await Users.findOne({ where: { email } });
+            if (!password) return serverMessage(res, "REQUIRED_FIELDS_MISSING");
+
+            const user = await Users.findOne({ where: { reset_token: token } });
             if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
 
+            const isTokenValid =
+                user.reset_token === token &&
+                user.reset_token_expires_at &&
+                new Date(user.reset_token_expires_at) > new Date();
+
+            if (!isTokenValid)
+                return serverMessage(res, "INVALID_OR_EXPIRED_TOKEN");
+
+            // Supprime le code pour éviter réutilisation
+            user.reset_token = null;
+            user.reset_token_expires_at = null;
             const hashedPassword = await bcrypt.hash(password, 10);
             user.password = hashedPassword;
 
@@ -360,6 +354,40 @@ Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignor
             return serverMessage(res, "PASSWORD_RECOVERED_SUCCESS");
         } catch (error) {
             await transaction.rollback();
+            console.error(error);
+            return serverMessage(res);
+        }
+    },
+    // Send password recovery link email
+    forgetPassword: async (req, res) => {
+        try {
+            const { email } = req.body;
+
+            const user = await Users.findOne({ where: { email } });
+            if (!user) return serverMessage(res, "PROFILE_NOT_FOUND");
+
+            const { accessToken: resetToken } = user.generateTokens();
+            const expiresAt = dayjs().add(15, "minutes").toDate();
+            user.reset_token = resetToken;
+            user.reset_token_expires_at = expiresAt;
+            console.log("expiresAt: ", expiresAt);
+            await user.save();
+
+            const rLink =
+                process.env.ORIGINE_URL + "/reset-password?pk=" + resetToken;
+            const mail = await sendMail({
+                to: email,
+                subject: "Réinitialisation de votre mot de passe",
+                text: `Vous avez demandé la réinitialisation de votre mot de passe.
+Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :
+${rLink}
+Si vous n'avez pas demandé de réinitialisation de mot de passe, veuillez ignorer ce message.`,
+            });
+            if (mail && mail.accepted.length > 0) {
+                return serverMessage(res, "EMAIL_SINDING_SUCCESS");
+            }
+            return serverMessage(res, "EMAIL_SINDING_FAILED");
+        } catch (error) {
             console.error(error);
             return serverMessage(res);
         }

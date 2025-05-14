@@ -28,6 +28,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         case "UNAUTHORIZED_ACCESS":
         case "TOKEN_EXPIRED":
         case "INVALID_OR_EXPIRED_CODE":
+        case "INVALID_OR_EXPIRED_TOKEN":
         case "TOKEN_INVALID":
         case "ACCOUNT_BLOKED":
         case "ENRICH_SOURCE_IS_EMPTY":
@@ -60,6 +61,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         // Erreurs serveur (5xx)
         case "SERVER_ERROR":
         case "FAILED_TO_GET_JOB":
+        case "EMAIL_SINDING_FAILED":
             error = true;
             status = 500; // Internal Server Error
             break;
@@ -100,6 +102,7 @@ module.exports = serverMessage = (res, key, data = []) => {
         case "JOB_DELETED":
         case "ENRICH_CREATED":
         case "NEXT_STEP":
+        case "EMAIL_SINDING_SUCCESS":
         case "RESET_CODE_SENT":
             status = 200; // OK (successful operation)
             break;

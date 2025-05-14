@@ -48,12 +48,12 @@ module.exports = (sequelize) => {
                 defaultValue: "USER",
                 allowNull: false,
             },
-            reset_code: {
+            reset_token: {
                 type: DataTypes.STRING,
                 allowNull: true,
                 defaultValue: null,
             },
-            reset_code_expires_at: {
+            reset_token_expires_at: {
                 type: DataTypes.DATE,
                 allowNull: true,
             },
