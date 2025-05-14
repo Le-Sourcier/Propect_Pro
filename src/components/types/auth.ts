@@ -39,27 +39,21 @@ export interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ error: Error | null; data: any }>;
-  signUp: (
-    email: string,
-    password: string,
-    fname: string,
-    lname: string,
-    phone: string
-  ) => Promise<{ error: Error | null; data: any }>;
+  signUp: (data: RegisterProps) => Promise<{ error: Error | null; data: any }>;
   getAllActivities: () => Promise<Activities[] | []>;
   logout: () => void;
 }
 
-export interface RegistrationData {
+export interface RegisterProps {
+  fname: string;
+  lname: string;
   email: string;
   password: string;
-  firstName?: string;
-  lastName?: string;
-  dateOfBirth?: string;
-  address?: string;
-  phone?: string;
-  profileImage?: File;
+  confirmPassword: string;
+  image: File | null;
+  address: string;
+  city: string;
+  postal_code: string;
+  phone: string;
+  agree_to_terms: boolean;
 }
-
-export type ValidationErrors = Partial<Record<keyof RegistrationData, string>>;
-export type TouchedFields = Partial<Record<keyof RegistrationData, boolean>>;

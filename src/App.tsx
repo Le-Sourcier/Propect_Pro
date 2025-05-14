@@ -15,10 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import ScrapingModule from "./pages/ScrapingModule";
 import EnrichmentModule from "./pages/EnrichmentModule";
 import Settings from "./pages/settings";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
-import ForgetPassword from "./pages/ForgetPassword";
 
 // Settings pages
 import AccountSettings from "./pages/settings/AccountSettings";
@@ -29,6 +26,9 @@ import PrivacySettings from "./pages/settings/PrivacySettings";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import CookiesRule from "./pages/CookiesRule";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -40,10 +40,14 @@ function App() {
           <Toaster position="top-right" />
           <Routes>
             {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forget-password" element={<ForgetPassword />} />
-
+            <Route path="/" element={<Navigate to="/signin" replace />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/" element={<Navigate to="/signin" replace />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             {/* Protected routes */}
             <Route
               path="/"
@@ -75,24 +79,6 @@ function App() {
                 <Route path="jobs/:jobId" element={<EnrichmentModule />} />
               </Route>
 
-              {/* Email campaign routes */}
-              {/* <Route path="email-campaigns">
-                <Route index element={<EmailCampaigns />} />
-                <Route path="new" element={<CampaignEditor />} />
-                <Route path=":campaignId/edit" element={<CampaignEditor />} />
-                <Route
-                  path=":campaignId/analytics"
-                  element={<CampaignAnalytics />}
-                />
-                <Route path="templates/new" element={<TemplateEditor />} />
-                <Route
-                  path="templates/:templateId/edit"
-                  element={<TemplateEditor />}
-                />
-                <Route path="contacts/new" element={<NewContactList />} />
-                <Route path="contacts/:listId" element={<ContactList />} />
-              </Route> */}
-
               {/* Settings routes */}
               <Route path="settings" element={<Settings />}>
                 <Route index element={<Navigate to="account" replace />} />
@@ -104,7 +90,6 @@ function App() {
                 <Route path="privacy" element={<PrivacySettings />} />
               </Route>
             </Route>
-
             {/* 404 route */}
             <Route path="*" element={<NotFound />} />
           </Routes>

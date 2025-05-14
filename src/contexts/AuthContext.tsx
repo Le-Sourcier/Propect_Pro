@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import {
   ApiResponse,
   AuthContextType,
+  RegisterProps,
   User,
   UserWithToken,
 } from "../components/types/auth";
@@ -22,6 +23,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(
     () => Cookies.get("accessToken") || null
+  );
+  const [refreshToken, setRefreshToken] = useState<string | null>(
+    () => Cookies.get("refreshToken") || null
   );
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -72,6 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       secure: true,
       sameSite: "Strict",
     });
+    setRefreshToken(data.refreshToken);
+    console.log("refreshToken", data.refreshToken);
 
     setAccessToken(data.accessToken);
     setUser(data);
@@ -212,22 +218,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signUp = async (
-    email: string,
-    password: string,
-    fname: string,
-    lname: string,
-    phone: string
+    registerData: RegisterProps
   ): Promise<{ error: Error | null; data: any }> => {
     setLoading(true);
     try {
       const res = await axios.post<ApiResponse<UserWithToken>>(
         `${BASE_URL}/register`,
         {
-          email,
-          password,
-          fname,
-          lname,
-          phone,
+          ...registerData,
         }
       );
 
@@ -288,14 +286,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
   const refreshAccessToken = async () => {
     try {
-      const rToken = Cookies.get("refreshToken");
-      console.log("rToken", rToken);
       const res = await axios.post<ApiResponse<{ token: string }>>(
-        `${BASE_URL}/refresh`,
-        rToken,
-        {
-          withCredentials: true, // important pour envoyer les cookies
-        }
+        `${BASE_URL}/refresh/${refreshToken}`
       );
 
       const { error, data, message } = res.data;

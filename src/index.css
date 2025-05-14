@@ -3,13 +3,32 @@
 @tailwind utilities;
 @plugin "flowbite/plugin";
 @source "../node_modules/flowbite";
-/* .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm mb-3;
+
+
+:root {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: light dark;
+    color: #0F0F0F;
+    background-color: #F5F5F7;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-.btn-primary {
-    @apply w-full bg-blue-600 text-white py-2 px-4 rounded-md hover: bg-blue-700;
-} */
+@layer base {
+    body {
+        @apply text-neutral-900 bg-neutral-50;
+    }
+
+    h1, h2, h3, h4 {
+        @apply font-medium tracking-tight;
+    }
+}
 
 
 @keyframes fadeIn {
