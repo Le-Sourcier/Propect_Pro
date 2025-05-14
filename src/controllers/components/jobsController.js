@@ -12,8 +12,8 @@ module.exports = {
     // Create new job
     createJob: async (req, res) => {
         try {
-            const { user_id, source, query, location, results } = req.body;
-            console.log("createJob", req.body);
+            const { user_id, source, query, location, results, limite } =
+                req.body;
 
             const userExists = await Users.findByPk(user_id);
             if (!userExists) {
@@ -26,6 +26,7 @@ module.exports = {
                 query,
                 location,
                 results,
+                limite,
             });
             const jobPlain = job.get({ plain: true });
             const data = {
@@ -47,28 +48,35 @@ module.exports = {
 
     // Get all jobs
     getAllJobs: async (req, res) => {
-        const { user_id } = req.query;
+        const id = req.params.id;
         try {
-            const userExists = await Users.findByPk(user_id);
-            if (!userExists) {
+            const user = await Users.findByPk(id);
+            if (!user) {
                 return serverMessage(res, "UNAUTHORIZED_ACCESS");
             }
 
-            const jobs = await Jobs.findAll({ where: { user_id } });
-            if (!jobs || jobs.length < 0) {
+            const jobs = await Jobs.findAll({ where: { user_id: user.id } });
+            if (!jobs || jobs.length <= 0) {
                 return serverMessage(res, "NO_JOBS_FOUND");
             }
             const data = jobs.map((job) => {
                 const plainJob = job.get({ plain: true });
-                return {
-                    ...plainJob,
-                    updatedAt: dayjs(plainJob.createdAt).format(
+                delete plainJob.user_id;
+
+                const data = {
+                    id: plainJob.id,
+                    name: plainJob.query,
+                    source: plainJob.source,
+                    location: plainJob.location,
+                    status: plainJob.status,
+                    date: dayjs(plainJob.createdAt).format(
                         "ddd MMM YYYY HH:mm"
                     ),
                 };
+                return data;
             });
 
-            res.status(200).json({ data });
+            return serverMessage(res, "SUCCESS", data);
             // res.status(200).json(jobs);
         } catch (error) {
             // res.status(500).json({ error: "Unable to fetch jobs" });
@@ -130,7 +138,6 @@ module.exports = {
             const io = req.app.get("io");
 
             const job = await Jobs.findByPk(jobId);
-            console.log("job", job);
             if (!job) {
                 return serverMessage(res, "JOB_NOT_FOUND");
             }
@@ -155,9 +162,13 @@ module.exports = {
                 let JobType;
 
                 if (JobSource === "google-maps") {
-                    JobType = Google.Scraper(job.query, job.location);
+                    JobType = Google.Scraper(
+                        job.query,
+                        job.location,
+                        job.limite
+                    );
                 } else if (JobSource === "pappers") {
-                    JobType = Pappers.scraper(job.query);
+                    JobType = Pappers.scraper(job.query, job.limite);
                 }
 
                 JobType.then(async (results) => {
@@ -184,7 +195,7 @@ module.exports = {
 
                     io.emit("jobStatusUpdate", {
                         status: job.status,
-                        name: "scraping_" + job.name,
+                        name: "scraping_" + job.query.replaceAll(" ", "_"),
                     });
                 }).catch(async (err) => {
                     console.error("Scraping failed for job:", job.id, err);
@@ -193,7 +204,7 @@ module.exports = {
                     });
                     io.emit("jobStatusUpdate", {
                         status: "failed",
-                        name: "scraping_" + job.name,
+                        name: "scraping_" + job.query.replaceAll(" ", "_"),
                     });
                 });
             }

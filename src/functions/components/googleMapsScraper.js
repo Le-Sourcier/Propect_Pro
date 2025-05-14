@@ -70,7 +70,102 @@ async function scrollPage(page) {
 }
 
 // ===== Scraper Function =====
-async function Scraper(name, location) {
+// async function Scraper(name, location, limite) {
+//     const browser = await launchBrowser();
+//     const page = await browser.newPage();
+//     const searchUrl = await buildSearchUrl(name, location);
+
+//     await page.goto(searchUrl);
+//     await acceptCookies(page);
+//     await scrollPage(page);
+
+//     const results = await page.evaluate(() => {
+//         const items = Array.from(
+//             document.querySelectorAll('div[role="feed"] > div > div[jsaction]')
+//         );
+
+//         return items.map((item) => {
+//             let data = {};
+
+//             // Extract the title, link, and website from each search result, handling errors gracefully
+//             try {
+//                 data.nom_entreprise =
+//                     item.querySelector(".fontHeadlineSmall").textContent;
+//             } catch (error) {}
+
+//             try {
+//                 data.link = item.querySelector("a").getAttribute("href");
+//             } catch (error) {}
+
+//             try {
+//                 // Extract the website link from the search result
+//                 // Select all anchor tags that start with 'http'
+//                 // and filter out Google-related links
+//                 const anchors = item.querySelectorAll("a[href^='http']");
+//                 for (let anchor of anchors) {
+//                     const href = anchor.getAttribute("href");
+//                     if (
+//                         !href.includes("google") &&
+//                         !href.includes("/maps/") &&
+//                         !href.includes("/search")
+//                     ) {
+//                         data.website = href;
+//                         break;
+//                     }
+//                 }
+//             } catch (error) {}
+
+//             // Extract the rating and number of reviews
+//             try {
+//                 const ratingText = item
+//                     .querySelector('.fontBodyMedium > span[role="img"]')
+//                     .getAttribute("aria-label")
+//                     .split(" ")
+//                     .map((x) => x.replace(",", "."))
+//                     .map(parseFloat)
+//                     .filter((x) => !isNaN(x));
+
+//                 data.stars = ratingText[0];
+//                 data.reviews = ratingText[1];
+//             } catch (error) {}
+
+//             // Extract phone numbers from the text, using regex to match formats
+//             try {
+//                 const textContent = item.innerText;
+//                 const phoneRegex =
+//                     /((\+?\d{1,2}[ -]?)?(\(?\d{3}\)?[ -]?\d{3,4}[ -]?\d{4}|\(?\d{2,3}\)?[ -]?\d{2,3}[ -]?\d{2,3}[ -]?\d{2,3}))/g;
+
+//                 const matches = [...textContent.matchAll(phoneRegex)];
+//                 let phoneNumbers = matches
+//                     .map((match) => match[0])
+//                     .filter((phone) => (phone.match(/\d/g) || []).length >= 10);
+
+//                 let phoneNumber =
+//                     phoneNumbers.length > 0
+//                         ? phoneNumbers[0]
+//                         : item
+//                               .querySelector(".fontBodyMedium")
+//                               .innerText.match(phoneRegex)[0]
+//                         ? item
+//                               .querySelector(".fontBodyMedium")
+//                               .innerText.match(phoneRegex)[0]
+//                         : null;
+//                 if (phoneNumber) {
+//                     phoneNumber = phoneNumber.replace(/[ -]/g, "");
+//                 }
+
+//                 data.phone_number = phoneNumber;
+//             } catch (error) {}
+
+//             return data; // Return the extracted data for each item
+//         });
+//     });
+
+//     await browser.close();
+//     return results.filter((r) => r.nom_entreprise);
+// }
+
+async function Scraper(name, location, limite = 0) {
     const browser = await launchBrowser();
     const page = await browser.newPage();
     const searchUrl = await buildSearchUrl(name, location);
@@ -79,28 +174,27 @@ async function Scraper(name, location) {
     await acceptCookies(page);
     await scrollPage(page);
 
-    const results = await page.evaluate(() => {
+    const results = await page.evaluate((lim) => {
         const items = Array.from(
             document.querySelectorAll('div[role="feed"] > div > div[jsaction]')
         );
 
-        return items.map((item) => {
+        // Limiter le nombre d’éléments si lim est défini (> 0)
+        const limitedItems = lim > 0 ? items.slice(0, lim) : items;
+
+        return limitedItems.map((item) => {
             let data = {};
 
-            // Extract the title, link, and website from each search result, handling errors gracefully
             try {
                 data.nom_entreprise =
                     item.querySelector(".fontHeadlineSmall").textContent;
-            } catch (error) {}
+            } catch {}
 
             try {
                 data.link = item.querySelector("a").getAttribute("href");
-            } catch (error) {}
+            } catch {}
 
             try {
-                // Extract the website link from the search result
-                // Select all anchor tags that start with 'http'
-                // and filter out Google-related links
                 const anchors = item.querySelectorAll("a[href^='http']");
                 for (let anchor of anchors) {
                     const href = anchor.getAttribute("href");
@@ -113,9 +207,8 @@ async function Scraper(name, location) {
                         break;
                     }
                 }
-            } catch (error) {}
+            } catch {}
 
-            // Extract the rating and number of reviews
             try {
                 const ratingText = item
                     .querySelector('.fontBodyMedium > span[role="img"]')
@@ -127,9 +220,8 @@ async function Scraper(name, location) {
 
                 data.stars = ratingText[0];
                 data.reviews = ratingText[1];
-            } catch (error) {}
+            } catch {}
 
-            // Extract phone numbers from the text, using regex to match formats
             try {
                 const textContent = item.innerText;
                 const phoneRegex =
@@ -150,16 +242,17 @@ async function Scraper(name, location) {
                               .querySelector(".fontBodyMedium")
                               .innerText.match(phoneRegex)[0]
                         : null;
+
                 if (phoneNumber) {
                     phoneNumber = phoneNumber.replace(/[ -]/g, "");
                 }
 
                 data.phone_number = phoneNumber;
-            } catch (error) {}
+            } catch {}
 
-            return data; // Return the extracted data for each item
+            return data;
         });
-    });
+    }, limite);
 
     await browser.close();
     return results.filter((r) => r.nom_entreprise);

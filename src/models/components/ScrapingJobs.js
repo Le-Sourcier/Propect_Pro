@@ -38,6 +38,11 @@ module.exports = (sequelize) => {
                 allowNull: false,
                 defaultValue: 10,
             },
+            limite: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: 0,
+            },
             status: {
                 type: DataTypes.ENUM(
                     "pending",

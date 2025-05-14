@@ -206,7 +206,7 @@ module.exports = {
     refresh: async (req, res) => {
         try {
             // const token = req.cookies.refreshToken;
-            const token = req.query.refreshToken;
+            const token = req.body.refreshToken;
             console.log(token);
 
             if (!token) return serverMessage(res, "UNAUTHORIZED_ACCESS");

@@ -4,7 +4,7 @@ const jobEmitter = require("../../events/jobEvent");
 
 router
     .post("/create", jobController.createJob) // Create new scraping job
-    .get("/all", jobController.getAllJobs) // Get all scraping jobs
+    .get("/all/:id", jobController.getAllJobs) // Get all scraping jobs
     .get("/get/:id", jobController.getJobByList) // Get all jobs created with user ID
     .get("/single/:id", jobController.getJobWithDetails) // Get specific job by ID
     .put("/update/:id", jobController.startJob) // Update job

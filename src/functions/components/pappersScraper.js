@@ -26,6 +26,7 @@ async function fetchPappers(url) {
     }
     return res.json();
 }
+
 // 1.0) Given a SIREN, fetch both company data and dirigeants (from suggestion mode)
 
 // 1.1) Given a SIREN, fetch both company data and dirigeants
@@ -65,7 +66,7 @@ async function fetchEntrepriseData(siren) {
 }
 
 // 2) Build a recherche URL for free-text lookups
-function buildSearchUrl(q, page = 1) {
+function buildSearchUrl(q, page = 1, limit = 100) {
     const encoded = encodeURIComponent(q);
     return (
         `${BASE_URL}/recherche` +
@@ -74,13 +75,13 @@ function buildSearchUrl(q, page = 1) {
         `&precision=standard` +
         `&bases=entreprises,dirigeants,publications` +
         `&page=${page}` +
-        `&par_page=100` +
+        `&par_page=${limit}` +
         `&case_sensitive=false`
     );
 }
 
 // 3) Resolve any input into { siren, companyName, fullName }
-async function resolveQuery(query) {
+async function resolveQuery(query, limite) {
     const trimmed = query;
 
     // A) If already a SIREN
@@ -106,7 +107,7 @@ async function resolveQuery(query) {
     }
 
     // C) Otherwise assume it's a free-text name: do a /recherche → grab the first siren
-    const searchRes = await fetchPappers(buildSearchUrl(trimmed, 1));
+    const searchRes = await fetchPappers(buildSearchUrl(trimmed, 1, limite));
     const first = Array.isArray(searchRes.resultats) && searchRes.resultats[0];
     if (!first || !first.siren) {
         return { siren: null, companyName: trimmed, fullName: null };
@@ -122,22 +123,64 @@ async function resolveQuery(query) {
 }
 
 // 4) Fetch all paged enrich results by that resolved companyName
-async function fetchAllResults(searchQuery) {
-    let page = 1,
-        totalPages = 1,
-        all = [];
+// async function fetchAllResults(searchQuery, limite) {
+//     const perPage = 100;
+//     let page = 1;
+//     let totalPages = 1;
+//     const allResults = [];
+
+//     do {
+//         const data = await fetchPappers(
+//             buildSearchUrl(searchQuery, page, perPage)
+//         );
+
+//         if (!Array.isArray(data.resultats)) break;
+
+//         allResults.push(...data.resultats);
+
+//         if (page === 1) {
+//             const total = data.total_results || data.total || 0;
+//             totalPages = Math.ceil(total / perPage);
+//             console.log(`🧮 Total results: ${total}, Pages: ${totalPages}`);
+//         }
+
+//         page++;
+//     } while (page <= totalPages);
+
+//     return allResults;
+// }
+
+async function fetchAllResults(searchQuery, limite = 0) {
+    const perPage = 100;
+    let page = 1;
+    let totalPages = 1;
+    const allResults = [];
 
     do {
-        const data = await fetchPappers(buildSearchUrl(searchQuery, page));
+        const data = await fetchPappers(
+            buildSearchUrl(searchQuery, page, perPage)
+        );
+
         if (!Array.isArray(data.resultats)) break;
-        all.push(...data.resultats);
+
+        allResults.push(...data.resultats);
+
         if (page === 1) {
-            totalPages = Math.ceil((data.total_results || 0) / 100);
+            const total = data.total_results || data.total || 0;
+            totalPages = Math.ceil(total / perPage);
+            console.log(`🧮 Total results: ${total}, Pages: ${totalPages}`);
         }
+
+        // Stop early if we reached the limit
+        if (limite > 0 && allResults.length >= limite) {
+            break;
+        }
+
         page++;
     } while (page <= totalPages);
 
-    return all;
+    // Trim the array if we went over the limit
+    return limite > 0 ? allResults.slice(0, limite) : allResults;
 }
 
 // 5) Format final output
@@ -154,10 +197,13 @@ function formatResults(results, fullName) {
 }
 
 // Public scraper entrypoint
-async function scraper(query) {
+async function scraper(query, limite) {
     try {
-        const { siren, companyName, fullName } = await resolveQuery(query);
-        const list = await fetchAllResults(companyName);
+        const { siren, companyName, fullName } = await resolveQuery(
+            query,
+            limite
+        );
+        const list = await fetchAllResults(companyName, limite);
         return {
             siren,
             companyName,
