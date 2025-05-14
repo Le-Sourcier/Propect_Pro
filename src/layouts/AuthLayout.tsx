@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Logo from "../components/ui/components/Logo";
+import AuthCover from "./../assets/auth_cover.jpg";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -55,9 +56,11 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
         transition={{ duration: 0.8, delay: 0.3 }}
       >
         <img
-          src="https://images.pexels.com/photos/8043823/pexels-photo-8043823.jpeg"
-          alt="Emergency responder"
-          className="w-full h-full object-cover opacity-90"
+          // src="https://images.pexels.com/photos/8043823/pexels-photo-8043823.jpeg"
+          src={AuthCover}
+          alt="Auth cover"
+          loading="lazy"
+          className="w-full h-screen object-fill opacity-90"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
 
