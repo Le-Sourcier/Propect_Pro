@@ -58,6 +58,18 @@ interface Adresse {
   code_pays: string;
 }
 
+interface AllScrapingJob {
+  id: string;
+  name: string;
+  source: string;
+  location: string;
+  status: string;
+  date: string;
+}
+export interface AllJobResponse {
+  error: Error | null;
+  data: AllScrapingJob[];
+}
 export interface SelectedScrapingJobResult {
   // Identité de l'entreprise
   nom_entreprise: string;
@@ -82,6 +94,7 @@ export interface SelectedScrapingJobResult {
 }
 export interface ScrapingState {
   jobs: ScrapingJob[];
+  allJobs?: AllJobResponse;
   selectedJob?: SelectedScrapingJob | null;
   isLoading: boolean;
   error: string | null;
@@ -89,6 +102,7 @@ export interface ScrapingState {
   fetchJobById: (jobId: string) => Promise<void>;
   createJob: (job: Partial<ScrapingJob>) => Promise<void>;
   updateJob: (id: string, updates: Partial<ScrapingJob>) => Promise<void>;
+  getAllJobs: () => Partial<AllJobResponse>;
   deleteJob: (id: string) => Promise<void>;
   resetSelectedJob: () => void; // 👈 ajouter ceci
 }

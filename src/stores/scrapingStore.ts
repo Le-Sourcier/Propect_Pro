@@ -1,7 +1,12 @@
 import { create } from "zustand";
 
 import axios from "axios";
-import { ScrapingJob, ScrapingState } from "../components/types/jobsInterface";
+import {
+  AllJobResponse,
+  ScrapingJob,
+  ScrapingState,
+} from "../components/types/jobsInterface";
+import useAuth from "../hooks/useAuth";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/job";
 
@@ -99,6 +104,24 @@ export const useScrapingStore = create<ScrapingState>((set) => ({
     }
   },
 
+  getAllJobs: async () => {
+    const { user } = useAuth();
+
+    try {
+      set({ isLoading: true, error: null });
+      const res = await axios.get<AllJobResponse>(
+        `${BASE_URL}/all/${user?.id} `
+      );
+      const { error, data } = res.data;
+      // set({ allJobs: data || [], isLoading: false });
+      return { error, data };
+    } catch (error) {
+      set({
+        error: (error as any).response.data.message || "Error fetching jobs",
+        isLoading: false,
+      });
+    }
+  },
   deleteJob: async (id: string) => {
     try {
       set({ isLoading: true, error: null });

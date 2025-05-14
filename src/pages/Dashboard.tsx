@@ -10,9 +10,12 @@ import {
 import useAuth from "../hooks/useAuth";
 import { Link } from "react-router-dom";
 import RecentActivities from "../components/utils/recentActivities";
+import { useScrapingStore } from "../stores/scrapingStore";
+import React from "react";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { getAllJobs } = useScrapingStore();
 
   // Stats data (would normally come from API)
   const stats = [
@@ -81,6 +84,14 @@ const Dashboard = () => {
       color: "bg-orange-500",
     },
   ];
+
+  // React.useEffect(() => {
+  //   const fetch = async () => {
+  //     const res = await getAllJobs();
+  //     console.log("RES: ", res);
+  //   };
+  //   fetch();
+  // }, []);
 
   return (
     <div className="space-y-6">
