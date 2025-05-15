@@ -117,10 +117,19 @@ const ExpiredToken: React.FC = () => {
               <div className="mt-6 space-y-3">
                 <button
                   onClick={() => setIsRequestingNew(true)}
-                  className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition"
+                  disabled={loading}
+                  className="w-full  px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Renvoyer un lien
+                  <span
+                    style={{ display: loading ? "none" : "block" }}
+                    className=""
+                  >
+                    Renvoyer un lien
+                  </span>
+                  <RefreshCw
+                    style={{ display: loading ? "block" : "none" }}
+                    className="h- w- ml-2 animate-spin items-center flex justify-center "
+                  />
                 </button>
                 <button
                   onClick={() => navigate("/")}

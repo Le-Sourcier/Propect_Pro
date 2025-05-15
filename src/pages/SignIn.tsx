@@ -6,6 +6,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import PasswordField from "../components/ui/components/PasswordField";
 import SocialButton from "../components/ui/components/SocialButton";
 import useAuth from "../hooks/useAuth";
+import { RefreshCw } from "lucide-react";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -13,14 +14,13 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  const { login } = useAuth();
+  const { loading, login } = useAuth();
 
   interface SignInFormEvent extends React.FormEvent<HTMLFormElement> {}
 
   const handleSubmit = async (e: SignInFormEvent) => {
     e.preventDefault();
     // Implementation for sign in logic would go here
-    // console.log({ email, password, rememberMe });
     const res = await login(email, password);
     if (!res.error) navigate("/");
   };
@@ -96,11 +96,21 @@ const SignIn = () => {
         <div className="space-y-3">
           <motion.button
             type="submit"
-            className="w-full bg-black text-white font-medium py-3 px-6 rounded-full transition-all duration-300 transform hover: bg-opacity-90 active:scale-[0.98] focus:outline-none"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+            disabled={loading}
+            style={!loading ? { cursor: "pointer" } : { cursor: "not-allowed" }}
+            className={`w-full flex items-center justify-center ${
+              loading ? "bg-gray-300 text-gray-400 " : "bg-black text-white"
+            }  font-medium py-3 px-6 rounded-full transition-all duration-300 transform hover: bg-opacity-90 active:scale-[0.98] focus:outline-none `}
+            whileHover={{ scale: loading ? 1 : 1.01 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
           >
-            Sign in
+            <span style={{ display: loading ? "none" : "block" }} className="">
+              Sign in
+            </span>
+            <RefreshCw
+              style={{ display: loading ? "block" : "none" }}
+              className="h- w- ml-2 animate-spin items-center flex justify-center "
+            />
           </motion.button>
 
           <SocialButton

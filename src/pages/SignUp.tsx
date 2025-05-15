@@ -10,7 +10,7 @@ import SocialButton from "../components/ui/components/SocialButton";
 import { RegisterProps } from "../components/types/auth";
 import useAuth from "../hooks/useAuth";
 import toast from "react-hot-toast";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, RefreshCw } from "lucide-react";
 
 const SignUp: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -299,11 +299,22 @@ const SignUp: React.FC = () => {
             </motion.button>
             <motion.button
               type="submit"
-              className="w-full bg-black text-white font-medium py-3 px-6 rounded-full transition-all duration-300 transform hover: bg-opacity-90 active:scale-[0.98] focus:outline-none"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+              disabled={loading}
+              style={
+                !loading ? { cursor: "pointer" } : { cursor: "not-allowed" }
+              }
+              className={`w-full flex items-center justify-center ${
+                loading ? "bg-gray-300 text-gray-400 " : "bg-black text-white"
+              }  font-medium py-3 px-6 rounded-full transition-all duration-300 transform hover: bg-opacity-90 active:scale-[0.98] focus:outline-none`}
+              whileHover={{ scale: loading ? 1 : 1.01 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
             >
-              {step === 1 ? "Continue" : "Create account"}
+              {step === 1 ? "Continue" : !loading && "Create account"}
+
+              <RefreshCw
+                style={{ display: loading && step === 2 ? "block" : "none" }}
+                className="h- w- ml-2 animate-spin items-center flex justify-center "
+              />
             </motion.button>
           </div>
 
