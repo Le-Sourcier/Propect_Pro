@@ -6,7 +6,7 @@ import {
   NotificationState,
   Notification,
 } from "./../components/types/notification";
-import { ApiResponse } from "../components/types";
+import { ApiResponse, ChartDataPoint } from "../components/types";
 import { Activities } from "../components/types/jobsInterface";
 
 const BASE_URL = import.meta.env.VITE_API_URL + "/notif";
@@ -43,7 +43,7 @@ export const useNotifStore = create<NotificationState>((set) => ({
       const { data } = res.data;
 
       set((state) => ({
-        notification: state.data.map((notif) =>
+        data: (state.data as Notification[]).map((notif) =>
           notif.id === id ? { ...notif, ...data } : notif
         ),
         isLoading: false,
@@ -63,6 +63,22 @@ export const useNotifStore = create<NotificationState>((set) => ({
       const res = await axios.post<ApiResponse<Activities[]>>(
         `${BASE_URL}/activities/`,
         { id }
+      );
+      const { data } = res.data;
+
+      set({ data: data || [], isLoading: false });
+      return data || [];
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+      return [];
+    }
+  },
+
+  getallMetricsData: async (id: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const res = await axios.get<ApiResponse<ChartDataPoint[]>>(
+        `${BASE_URL}/metrics/${id}`
       );
       const { data } = res.data;
 

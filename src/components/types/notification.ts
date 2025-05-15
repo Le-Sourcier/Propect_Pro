@@ -1,3 +1,4 @@
+import { ChartDataPoint } from ".";
 import { Activities } from "./jobsInterface";
 
 export type NotificationType = "info" | "success" | "warning" | "error";
@@ -17,10 +18,11 @@ export interface NotificationItemProps {
 }
 
 export interface NotificationState {
-  data: Notification[] | Activities[];
+  data: Notification[] | Activities[] | ChartDataPoint[];
   isLoading: boolean;
   error: string | null;
   fetchNotif: (id: string) => Promise<Notification[]>;
   markAsRead: (id: string, updates: Partial<Notification>) => Promise<void>;
   getallActivities: (id: string) => Promise<Activities[]>;
+  getallMetricsData: (id: string) => Promise<ChartDataPoint[]>;
 }
