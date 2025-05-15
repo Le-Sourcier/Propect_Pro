@@ -1,6 +1,7 @@
 import React from "react";
-import { Menu, Bell, User } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import useAuth from "../../hooks/useAuth";
+import NotificationButton from "../ui/components/NotificationButton";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -28,9 +29,8 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button className="text-gray-500 hover:text-gray-700 focus:outline-none">
-              <Bell size={20} />
-            </button>
+            <NotificationButton />
+
             <div className="relative">
               <button className="flex items-center text-sm bg-gray-100 text-gray-700 rounded-full p-1 focus:outline-none hover:bg-gray-200">
                 <span className="sr-only">Open user menu</span>

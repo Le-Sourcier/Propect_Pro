@@ -1,15 +1,6 @@
-import { Activities } from "./jobsInterface";
-
 export interface UserWithToken extends User {
   accessToken: string;
   refreshToken: string;
-}
-
-export interface ApiResponse<T> {
-  error: boolean;
-  status: number;
-  message: string;
-  data: T;
 }
 
 export interface User {
@@ -44,7 +35,6 @@ export interface AuthContextType {
     email: string
   ) => Promise<{ error: Error | null; data: any }>;
   signUp: (data: RegisterProps) => Promise<{ error: Error | null; data: any }>;
-  getAllActivities: () => Promise<Activities[] | []>;
   logout: () => void;
 }
 

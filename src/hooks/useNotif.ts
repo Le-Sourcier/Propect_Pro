@@ -1,12 +1,12 @@
-// import { useContext } from "react";
-// import { NotifContext } from "./../contexts/NotifContext"; // Adapte le chemin si besoin
+import { useContext } from "react";
+import { NotificationContext } from "../contexts/NotificationContext";
 
-// const useNotif = () => {
-//   const context = useContext(NotifContext);
-//   if (!context) {
-//     throw new Error("useNotif must be used within an NotifProvider");
-//   }
-//   return context;
-// };
-
-// export default useNotif;
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (context === undefined) {
+    throw new Error(
+      "useNotifications must be used within a NotificationProvider"
+    );
+  }
+  return context;
+};

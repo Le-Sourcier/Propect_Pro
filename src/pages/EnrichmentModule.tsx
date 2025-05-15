@@ -218,7 +218,10 @@ const EnrichmentModule = () => {
               <h1 className="text-2xl font-semibold text-gray-900">
                 Data Enrichment
               </h1>
-              <div className="flex space-x-2 mt-2 sm:mt-0">
+              <div
+                style={{ display: "none" }}
+                className="flex space-x-2 mt-2 sm:mt-0"
+              >
                 <button className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh API Keys

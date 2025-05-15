@@ -3,14 +3,13 @@ import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
-  ApiResponse,
   AuthContextType,
   RegisterProps,
   User,
   UserWithToken,
 } from "../components/types/auth";
 import toast from "react-hot-toast";
-import { Activities } from "../components/types/jobsInterface";
+import { ApiResponse } from "../components/types";
 const BASE_URL = import.meta.env.VITE_API_URL + "/user";
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -322,25 +321,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     Cookies.remove("refreshToken");
   };
 
-  const getAllActivities = async (): Promise<Activities[]> => {
-    try {
-      const id = user?.id;
-
-      const res = await axios.post<ApiResponse<Activities[]>>(
-        `${BASE_URL}/activities`,
-        id
-      );
-      const { error, data, message } = res.data;
-      if (error) {
-        console.log("Error getting activities: ", message);
-        return [];
-      }
-      return data;
-    } catch (error) {
-      console.error("Error fetching activities:", error);
-      return [];
-    }
-  };
   const refreshAccessToken = async () => {
     try {
       if (refreshToken)
@@ -386,7 +366,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         verifyPasswordToken,
         passwordForgetting,
         signUp,
-        getAllActivities,
         logout,
       }}
     >

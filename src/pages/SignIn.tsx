@@ -7,6 +7,7 @@ import PasswordField from "../components/ui/components/PasswordField";
 import SocialButton from "../components/ui/components/SocialButton";
 import useAuth from "../hooks/useAuth";
 import { RefreshCw } from "lucide-react";
+import toast from "react-hot-toast";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -27,7 +28,8 @@ const SignIn = () => {
 
   const handleGoogleSignIn = () => {
     // Implementation for Google sign in would go here
-    console.log("Sign in with Google");
+    // console.log("Sign in with Google");
+    toast.error("Google sign in not implemented yet.");
   };
 
   return (
@@ -112,14 +114,14 @@ const SignIn = () => {
               className="h- w- ml-2 animate-spin items-center flex justify-center "
             />
           </motion.button>
-
-          <SocialButton
-            icon={<FcGoogle size={24} />}
-            text="Sign in with Google"
-            onClick={handleGoogleSignIn}
-          />
         </div>
       </form>
+      <SocialButton
+        icon={<FcGoogle size={24} />}
+        text="Sign in with Google"
+        onClick={handleGoogleSignIn}
+        className="mt-4"
+      />
 
       <div className="mt-8 text-center">
         <p className="text-neutral-600">

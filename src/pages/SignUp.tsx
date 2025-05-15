@@ -317,16 +317,16 @@ const SignUp: React.FC = () => {
               />
             </motion.button>
           </div>
-
-          {step === 1 && (
-            <SocialButton
-              icon={<FcGoogle size={24} />}
-              text="Sign up with Google"
-              onClick={() => console.log("Sign up with Google")}
-            />
-          )}
         </div>
       </form>
+      {step === 1 && (
+        <SocialButton
+          icon={<FcGoogle size={24} />}
+          text="Sign up with Google"
+          onClick={() => toast.error("Google sign up not implemented yet.")}
+          className="mt-4"
+        />
+      )}
 
       <div className="mt-8 text-center">
         <p className="text-neutral-600">
