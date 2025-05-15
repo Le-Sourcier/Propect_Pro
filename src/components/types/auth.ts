@@ -33,6 +33,10 @@ export interface AuthContextType {
     password: string,
     confirmpassword: string
   ) => Promise<{ error: Error | null; data: any }>;
+  verifyMail: (
+    token: string
+  ) => Promise<{ error: Error | null; data: { firstName: string | null } }>;
+  reSendVerifyMail: (email: string) => Promise<{ error: Error | null }>;
   verifyPasswordToken: (
     token: string
   ) => Promise<{ error: Error | null; data: { firstName: string | null } }>;

@@ -156,6 +156,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
     }
   };
+  const verifyMail = async (
+    token: string
+  ): Promise<{ error: Error | null; data: any }> => {
+    setLoading(true);
+    try {
+      const res = await axios.post<ApiResponse<any>>(
+        `${BASE_URL}/verify-mail`,
+        { token }
+      );
+      const { error, message } = res.data;
+
+      if (error) {
+        toast.error(message);
+        return { error: new Error(message), data: null };
+      }
+      return { error: null, data: null };
+    } catch (e) {
+      let message;
+      if (axios.isAxiosError(e)) {
+        message = e.response?.data?.message;
+      }
+      toast.error(message || "Token verification failed");
+
+      return {
+        error: new Error(message || "Token verification failed"),
+        data: null,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+  const reSendVerifyMail = async (
+    email: string
+  ): Promise<{ error: Error | null; data: any }> => {
+    setLoading(true);
+    try {
+      const res = await axios.post<ApiResponse<any>>(
+        `${BASE_URL}/resend-mail`,
+        { email }
+      );
+      const { error, message } = res.data;
+
+      if (error) {
+        toast.error(message);
+        return { error: new Error(message), data: null };
+      }
+      return { error: null, data: null };
+    } catch (e) {
+      let message;
+      if (axios.isAxiosError(e)) {
+        message = e.response?.data?.message;
+      }
+      toast.error(message || "Token verification failed");
+
+      return {
+        error: new Error(message || "Token verification failed"),
+        data: null,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
   const verifyPasswordToken = async (
     token: string
   ): Promise<{ error: Error | null; data: any }> => {
@@ -319,6 +381,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         accessToken,
         login,
         resetPassword,
+        verifyMail,
+        reSendVerifyMail,
         verifyPasswordToken,
         passwordForgetting,
         signUp,

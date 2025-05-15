@@ -22,6 +22,7 @@ const SignIn = lazy(() => import("./pages/SignIn"));
 const SignUp = lazy(() => import("./pages/SignUp"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const AccounVerification = lazy(() => import("./pages/VerifyMail"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ScrapingModule = lazy(() => import("./pages/ScrapingModule"));
 const EnrichmentModule = lazy(() => import("./pages/EnrichmentModule"));
@@ -49,7 +50,7 @@ function App() {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-
+              <Route path="/verify-mail" element={<AccounVerification />} />
               {/* Protected dashboard */}
               <Route
                 path="/"
